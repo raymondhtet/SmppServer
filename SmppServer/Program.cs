@@ -1,11 +1,11 @@
-
 using Smpp.Server.Extensions;
+using Smpp.Server.Models;
 using Smpp.Server.Models.AppSettings;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-
+builder.Services.AddSingleton<MessageTracker>();
 builder.Services.AddSmppServer(builder.Configuration.GetSection(nameof(SmppServerConfiguration)));
 
 builder.Services.AddControllers();
@@ -14,9 +14,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 
-
 var app = builder.Build();
-
 
 
 // Configure the HTTP request pipeline.

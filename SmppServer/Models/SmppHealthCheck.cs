@@ -1,36 +1,35 @@
 ﻿using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Smpp.Server.BackgroundServices;
 
-namespace Smpp.Server.Models
+namespace Smpp.Server.Models;
+
+public class SmppHealthCheck : IHealthCheck
 {
-    public class SmppHealthCheck : IHealthCheck
+    private readonly SmppServer _server;
+
+    public SmppHealthCheck(SmppServer server)
     {
-        private readonly SmppServer _server;
+        _server = server;
+    }
 
-        public SmppHealthCheck(SmppServer server)
+    public Task<HealthCheckResult> CheckHealthAsync(
+        HealthCheckContext context,
+        CancellationToken cancellationToken = default)
+    {
+        try
         {
-            _server = server;
+            var isRunning = _server.IsRunning;
+            var activeSessions = _server.ActiveSessionsCount;
+
+            return Task.FromResult(
+                isRunning
+                    ? HealthCheckResult.Healthy($"SMPP Server is running. Active sessions: {activeSessions}")
+                    : HealthCheckResult.Unhealthy("SMPP Server is not running"));
         }
-
-        public Task<HealthCheckResult> CheckHealthAsync(
-            HealthCheckContext context,
-            CancellationToken cancellationToken = default)
+        catch (Exception ex)
         {
-            try
-            {
-                var isRunning = _server.IsRunning;
-                var activeSessions = _server.ActiveSessionsCount;
-
-                return Task.FromResult(
-                    isRunning
-                        ? HealthCheckResult.Healthy($"SMPP Server is running. Active sessions: {activeSessions}")
-                        : HealthCheckResult.Unhealthy("SMPP Server is not running"));
-            }
-            catch (Exception ex)
-            {
-                return Task.FromResult(
-                    HealthCheckResult.Unhealthy("SMPP Server health check failed", ex));
-            }
+            return Task.FromResult(
+                HealthCheckResult.Unhealthy("SMPP Server health check failed", ex));
         }
     }
 }
