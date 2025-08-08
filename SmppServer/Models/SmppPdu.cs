@@ -29,10 +29,102 @@ public class SmppPdu
         SequenceNumber = BitConverter.ToUInt32(headerData.Skip(12).Take(4).Reverse().ToArray());
     }
 
-    public string GetSourceAddress => GetString(GetByte(2) + 3);
+    public string GetSourceAddress 
+    {
+        get
+        {
+            try 
+            {
+                if (Body == null || Body.Length < 10)
+                    return "";
 
-    public string GetDestinationAddress => GetString(GetByte(GetByte(2) + 4) + this.GetByte(2) + 5);
+                var offset = GetSourceAddressOffset();
+                return offset != -1 ? GetString(offset) : "";
+            }
+            catch (Exception)
+            {
+                return "";
+            }
+        }
+    }
 
+
+
+    public string GetDestinationAddress
+    {
+        get
+        {
+            try
+            {
+                if (Body == null || Body.Length < 15)
+                    return "";
+
+                var offset = GetDestinationAddressOffset();
+                return offset != -1 ? GetString(offset) : "";
+            }
+            catch (Exception)
+            {
+                return "";
+            }
+        }
+    }
+
+    // 🚨 NEW: Helper method to find source address offset
+    private int GetSourceAddressOffset()
+    {
+        try
+        {
+            var offset = 0;
+            
+            // Skip service_type (null-terminated string)
+            while (offset < Body!.Length && Body[offset] != 0) 
+                offset++;
+            offset++; // Skip null terminator
+
+            // Skip source_addr_ton (1 byte) and source_addr_npi (1 byte)
+            offset += 2;
+
+            // Now at source_addr
+            return offset < Body.Length ? offset : -1;
+        }
+        catch
+        {
+            return -1;
+        }
+    }
+
+    // 🚨 NEW: Helper method to find destination address offset
+    private int GetDestinationAddressOffset()
+    {
+        try
+        {
+            var offset = 0;
+            
+            // Skip service_type (null-terminated string)
+            while (offset < Body!.Length && Body[offset] != 0) 
+                offset++;
+            offset++; // Skip null terminator
+
+            // Skip source_addr_ton (1 byte) and source_addr_npi (1 byte)
+            offset += 2;
+
+            // Skip source_addr (null-terminated string)
+            while (offset < Body.Length && Body[offset] != 0) 
+                offset++;
+            offset++; // Skip null terminator
+
+            // Skip dest_addr_ton (1 byte) and dest_addr_npi (1 byte)
+            offset += 2;
+
+            // Now at destination_addr
+            return offset < Body.Length ? offset : -1;
+        }
+        catch
+        {
+            return -1;
+        }
+    }
+    
     public byte[] GetBytes()
     {
         var headerLength = 16;

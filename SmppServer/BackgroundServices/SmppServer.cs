@@ -194,16 +194,10 @@ public class SmppServer : BackgroundService
 
     private async Task HandleSubmitSmAsync(SmppSession session, SmppPdu pdu, CancellationToken stoppingToken)
     {
-        // var sourceAddr = ExtractSourceAddr(pdu);
-        // var destAddr = ExtractDestAddr(pdu);
-
-        
         var sequenceNumber = pdu.SequenceNumber;
         string recipientNumber = pdu.GetSourceAddress;
-        string destinationAddress = "test";//pdu.GetDestinationAddress;
+        string destinationAddress = pdu.GetDestinationAddress;
         var messageId = Guid.NewGuid().ToString("N")[..10];
-
-        pdu.ParseOptionalParameters();
         
         var (isComplete, message) = _messageTracker.TrackMessageParts(pdu, recipientNumber, destinationAddress);
 
@@ -286,6 +280,8 @@ public class SmppServer : BackgroundService
         string? message,
         uint sequenceNumber)
     {
+        _logger.LogInformation("Processing complete message - {message}", message);
+        
         // Send final acknowledgment
         await SendAckAsync(session, sequenceNumber, messageId);
 
