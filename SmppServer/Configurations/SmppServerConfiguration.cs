@@ -1,4 +1,4 @@
-﻿namespace Smpp.Server.Models.AppSettings;
+﻿namespace Smpp.Server.Configurations;
 
 public class SmppServerConfiguration
 {

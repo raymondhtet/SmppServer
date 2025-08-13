@@ -2,6 +2,8 @@
 
 public static class SmppConstants
 {
+    public static readonly int HeaderSize = 16;
+    
     public enum MessageState : byte
     {
         SCHEDULED = 0,

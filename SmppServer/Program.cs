@@ -1,12 +1,11 @@
 using Smpp.Server.Extensions;
 using Smpp.Server.Models;
-using Smpp.Server.Models.AppSettings;
+using Smpp.Server.Configurations;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddSingleton<MessageTracker>();
-builder.Services.AddSmppServer(builder.Configuration.GetSection(nameof(SmppServerConfiguration)));
+builder.Services.AddSmppServerWithSsl(builder.Configuration);
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -24,10 +23,22 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
-
 app.UseAuthorization();
 
 app.MapControllers();
+
+var logger = app.Services.GetRequiredService<ILogger<Program>>();
+logger.LogInformation("SMPP Server application starting up...");
+
+// Log configuration
+var config = app.Services.GetRequiredService<IConfiguration>();
+var smppConfig = config.GetSection(nameof(SmppServerConfiguration)).Get<SmppServerConfiguration>();
+if (smppConfig != null)
+{
+    logger.LogInformation("⚙️ SMPP Configuration - Port: {Port}, Max Connections: {MaxConnections}", 
+        smppConfig.Port, smppConfig.MaxConcurrentConnections);
+}
+
+
 
 app.Run();

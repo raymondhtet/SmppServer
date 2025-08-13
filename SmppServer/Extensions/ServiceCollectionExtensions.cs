@@ -1,5 +1,5 @@
 ﻿using Smpp.Server.BackgroundServices;
-using Smpp.Server.Models.AppSettings;
+using Smpp.Server.Configurations;
 
 namespace Smpp.Server.Extensions;
 
