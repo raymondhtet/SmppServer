@@ -1,4 +1,5 @@
 ﻿using System.Security.Cryptography.X509Certificates;
+using Smpp.Server.Models;
 
 namespace Smpp.Server.Interfaces;
 

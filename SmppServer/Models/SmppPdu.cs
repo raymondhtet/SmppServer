@@ -69,7 +69,7 @@ public class SmppPdu
         }
     }
 
-    // 🚨 NEW: Helper method to find source address offset
+    // NEW: Helper method to find source address offset
     private int GetSourceAddressOffset()
     {
         try
@@ -93,7 +93,7 @@ public class SmppPdu
         }
     }
 
-    // 🚨 NEW: Helper method to find destination address offset
+    // NEW: Helper method to find destination address offset
     private int GetDestinationAddressOffset()
     {
         try

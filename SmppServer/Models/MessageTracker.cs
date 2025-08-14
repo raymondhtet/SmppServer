@@ -5,7 +5,7 @@ using Smpp.Server.Helpers;
 
 namespace Smpp.Server.Models;
 
-public abstract class MessageTracker(ILogger<MessageTracker> logger)
+public class MessageTracker(ILogger<MessageTracker> logger)
 {
     private readonly ConcurrentDictionary<string, MessagePartState> _messageStates = new();
 

@@ -1,5 +1,9 @@
 ﻿using Smpp.Server.BackgroundServices;
 using Smpp.Server.Configurations;
+using Smpp.Server.Handlers;
+using Smpp.Server.Interfaces;
+using Smpp.Server.Models;
+using Smpp.Server.Services;
 
 namespace Smpp.Server.Extensions;
 
@@ -12,7 +16,19 @@ public static class ServiceCollectionExtensions
         services.Configure<SmppServerConfiguration>(configure);
 
         services.AddHostedService<SmppServer>();
-        //services.AddHttpClient<IPostmanApiService, PostmanApiService>();
+        services.AddSingleton<MessageTracker>();
+        services.AddScoped<IAuthenticationService, ConfigurationAuthenticationService>();
+        services.AddScoped<IMessageConcatenationService, MessageConcatenationService>();
+        services.AddScoped<IMessageProcessor, MessageProcessor>();
+        services.AddScoped<IDeliveryReceiptSender, DeliveryReceiptSender>();
+
+        services.AddHttpClient<IExternalMessageService, PostmanApiService>();
+        
+        services.AddScoped<IPduHandler, BindTransceiverHandler>();
+        services.AddScoped<IPduHandler, SubmitSmHandler>();
+        services.AddScoped<IPduHandler, EnquireLinkHandler>();
+        services.AddScoped<IPduHandler, UnbindHandler>();
+
 
         return services;
     }
