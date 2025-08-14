@@ -6,7 +6,7 @@ public interface ISmppSession : IDisposable
 {
     string Id { get; }
     
-    string SystemId { get; }
+    string SystemId { get; set; }
 
     bool IsAuthenticated { get; set; }
     Task<SmppPdu?> ReadPduAsync(CancellationToken cancellationToken = default);

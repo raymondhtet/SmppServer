@@ -4,7 +4,7 @@ using Smpp.Server.Models;
 
 namespace Smpp.Server.Middlewares;
 
-public abstract class SmppAuthenticationMiddleware(ILogger<SmppAuthenticationMiddleware> logger)
+public class SmppAuthenticationMiddleware(ILogger<SmppAuthenticationMiddleware> logger)
     : PduProcessingMiddleware
 {
     public override async Task<SmppPdu?> HandleAsync(SmppPdu pdu, ISmppSession session, CancellationToken cancellationToken)

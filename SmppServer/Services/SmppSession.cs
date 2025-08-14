@@ -18,7 +18,7 @@ public class SmppSession : ISmppSession, IDisposable
 
     public string Id { get; }
     
-    public string SystemId { get; }
+    public string SystemId { get; set; }
     public bool IsAuthenticated { get; set; }
 
     public SmppSession(TcpClient client, ILogger logger)

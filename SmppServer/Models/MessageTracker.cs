@@ -5,7 +5,7 @@ using Smpp.Server.Helpers;
 
 namespace Smpp.Server.Models;
 
-public class MessageTracker(ILogger<MessageTracker> logger)
+public abstract class MessageTracker(ILogger<MessageTracker> logger)
 {
     private readonly ConcurrentDictionary<string, MessagePartState> _messageStates = new();
 
@@ -17,10 +17,10 @@ public class MessageTracker(ILogger<MessageTracker> logger)
         string sourceAddress,
         string destinationAddress)
     {
-        // 🚨 SMPP v3.5 FIX: Check for UDH concatenation first (most common in v3.5)
+        // SMPP v3.5 FIX: Check for UDH concatenation first (most common in v3.5)
         if (TryGetUdhConcatenationInfo(pdu, out var udhInfo))
         {
-            logger.LogInformation("📦 UDH Multipart message detected - Ref:{ReferenceNumber}, Part:{PartNumber}/{TotalParts}", 
+            logger.LogInformation("UDH Multipart message detected - Ref:{ReferenceNumber}, Part:{PartNumber}/{TotalParts}", 
                 udhInfo.ReferenceNumber, udhInfo.PartNumber, udhInfo.TotalParts);
                 
             var messagePartKey = GenerateMessagePartKey(udhInfo.ReferenceNumber, sourceAddress, destinationAddress);
@@ -37,7 +37,7 @@ public class MessageTracker(ILogger<MessageTracker> logger)
             var messageContent = ExtractMessageFromUdhPdu(pdu, udhInfo.UdhLength);
             state.ReceiveParts[udhInfo.PartNumber] = Encoding.UTF8.GetBytes(messageContent);
             
-            logger.LogInformation("📥 Received UDH segment {PartNumber}/{TotalParts} for message ({MessagePartKey}): '{MessageContent}' (Length: {Length})",
+            logger.LogInformation("Received UDH segment {PartNumber}/{TotalParts} for message ({MessagePartKey}): '{MessageContent}' (Length: {Length})",
                 udhInfo.PartNumber, udhInfo.TotalParts, messagePartKey, messageContent, messageContent.Length);
 
             if (state.IsComplete)
@@ -51,7 +51,7 @@ public class MessageTracker(ILogger<MessageTracker> logger)
                 return (true, completeMessage);
             }
             
-            logger.LogInformation("⏳ Still waiting for {RemainingParts} more UDH parts for message {MessagePartKey}", 
+            logger.LogInformation("Still waiting for {RemainingParts} more UDH parts for message {MessagePartKey}", 
                 udhInfo.TotalParts - state.ReceiveParts.Count, messagePartKey);
             
             return (false, null);
@@ -60,7 +60,7 @@ public class MessageTracker(ILogger<MessageTracker> logger)
         // Check for SAR optional parameters (less common but still supported)
         if (TryGetSarConcatenationInfo(pdu, out var sarInfo))
         {
-            logger.LogInformation("📦 SAR Multipart message detected - Ref:{ReferenceNumber}, Part:{PartNumber}/{TotalParts}", 
+            logger.LogInformation("SAR Multipart message detected - Ref:{ReferenceNumber}, Part:{PartNumber}/{TotalParts}", 
                 sarInfo.ReferenceNumber, sarInfo.PartNumber, sarInfo.TotalParts);
                 
             var messagePartKey = GenerateMessagePartKey(sarInfo.ReferenceNumber, sourceAddress, destinationAddress);
@@ -76,7 +76,7 @@ public class MessageTracker(ILogger<MessageTracker> logger)
             var (partMessage, _) = MessageParser.ExtractMessageFromPdu(pdu);
             state.ReceiveParts[sarInfo.PartNumber] = Encoding.UTF8.GetBytes(partMessage);
             
-            logger.LogInformation("📥 Received SAR segment {PartNumber}/{TotalParts} for message {MessagePartKey}: '{PartMessage}'",
+            logger.LogInformation("Received SAR segment {PartNumber}/{TotalParts} for message {MessagePartKey}: '{PartMessage}'",
                 sarInfo.PartNumber, sarInfo.TotalParts, messagePartKey, partMessage);
 
             if (state.IsComplete)
@@ -84,7 +84,7 @@ public class MessageTracker(ILogger<MessageTracker> logger)
                 string completeMessage = CombineMessageParts(state);
                 _messageStates.TryRemove(messagePartKey, out _);
                 
-                logger.LogInformation("✅ Completed SAR multipart message {MessagePartKey}: '{CompleteMessage}'", 
+                logger.LogInformation("Completed SAR multipart message {MessagePartKey}: '{CompleteMessage}'", 
                     messagePartKey, completeMessage);
                 
                 return (true, completeMessage);
@@ -95,11 +95,11 @@ public class MessageTracker(ILogger<MessageTracker> logger)
         
         // Single part message
         var (message, _) = MessageParser.ExtractMessageFromPdu(pdu);
-        logger.LogInformation("📨 Single part message received: '{Message}' (Length: {Length})", message, message.Length);
+        logger.LogInformation("Single part message received: '{Message}' (Length: {Length})", message, message.Length);
         return (true, message);
     }
 
-    // 🚨 NEW: UDH Concatenation Detection (SMPP v3.5 standard)
+    // NEW: UDH Concatenation Detection (SMPP v3.5 standard)
     private bool TryGetUdhConcatenationInfo(SmppPdu pdu, out UdhConcatenationInfo udhInfo)
     {
         udhInfo = default;
@@ -115,12 +115,12 @@ public class MessageTracker(ILogger<MessageTracker> logger)
                 return false;
                 
             var esmClass = pdu.Body[esmClassOffset];
-            logger.LogDebug("🔍 ESM_CLASS: 0x{EsmClass:X2}", esmClass);
+            logger.LogDebug("ESM_CLASS: 0x{EsmClass:X2}", esmClass);
             
             // Check if UDH indicator is set (bit 6)
             if ((esmClass & 0x40) == 0)
             {
-                logger.LogDebug("❌ No UDH indicator in ESM_CLASS");
+                logger.LogDebug("No UDH indicator in ESM_CLASS");
                 return false;
             }
             
@@ -136,7 +136,7 @@ public class MessageTracker(ILogger<MessageTracker> logger)
             var shortMessage = new byte[smLength];
             Array.Copy(pdu.Body, shortMessageOffset + 1, shortMessage, 0, smLength);
             
-            logger.LogDebug("📋 Short message length: {Length}, First bytes: {Bytes}", 
+            logger.LogInformation("Short message length: {Length}, First bytes: {Bytes}", 
                 smLength, string.Join(" ", shortMessage.Take(Math.Min(10, (int)smLength)).Select(b => $"0x{b:X2}")));
             
             // Parse UDH
@@ -144,7 +144,7 @@ public class MessageTracker(ILogger<MessageTracker> logger)
                 return false;
                 
             var udhLength = shortMessage[0];
-            logger.LogDebug("📏 UDH Length: {UdhLength}", udhLength);
+            logger.LogInformation("UDH Length: {UdhLength}", udhLength);
             
             if (udhLength == 0 || udhLength + 1 > shortMessage.Length)
                 return false;
@@ -159,7 +159,7 @@ public class MessageTracker(ILogger<MessageTracker> logger)
                 var iei = shortMessage[offset++];
                 var iedl = shortMessage[offset++];
                 
-                logger.LogDebug("🔍 Found IEI: 0x{IEI:X2}, IEDL: {IEDL}", iei, iedl);
+                logger.LogDebug("Found IEI: 0x{IEI:X2}, IEDL: {IEDL}", iei, iedl);
                 
                 if (offset + iedl > shortMessage.Length)
                     break;
@@ -170,7 +170,7 @@ public class MessageTracker(ILogger<MessageTracker> logger)
                     var totalParts = shortMessage[offset + 1];
                     var partNum = shortMessage[offset + 2];
                     
-                    logger.LogInformation("✅ Found 8-bit UDH concatenation: Ref={RefNum}, Part={PartNum}/{TotalParts}", 
+                    logger.LogInformation("Found 8-bit UDH concatenation: Ref={RefNum}, Part={PartNum}/{TotalParts}", 
                         refNum, partNum, totalParts);
                     
                     udhInfo = new UdhConcatenationInfo
@@ -188,7 +188,7 @@ public class MessageTracker(ILogger<MessageTracker> logger)
                     var totalParts = shortMessage[offset + 2];
                     var partNum = shortMessage[offset + 3];
                     
-                    logger.LogInformation("✅ Found 16-bit UDH concatenation: Ref={RefNum}, Part={PartNum}/{TotalParts}", 
+                    logger.LogInformation("Found 16-bit UDH concatenation: Ref={RefNum}, Part={PartNum}/{TotalParts}", 
                         refNum, partNum, totalParts);
                     
                     udhInfo = new UdhConcatenationInfo
@@ -206,7 +206,7 @@ public class MessageTracker(ILogger<MessageTracker> logger)
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "❌ Error parsing UDH concatenation info");
+            logger.LogError(ex, "Error parsing UDH concatenation info");
         }
         
         return false;
@@ -365,7 +365,7 @@ public class MessageTracker(ILogger<MessageTracker> logger)
         {
             if (_messageStates.TryRemove(key, out var removedState))
             {
-                logger.LogWarning("🧹 Removed stale incomplete message {MessagePartKey} with {ReceivedParts}/{TotalParts} parts", 
+                logger.LogWarning("Removed stale incomplete message {MessagePartKey} with {ReceivedParts}/{TotalParts} parts", 
                     key, removedState.ReceiveParts.Count, removedState.TotalParts);
             }
         }

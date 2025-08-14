@@ -4,6 +4,7 @@ using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Extensions.Options;
 using Smpp.Server.Configurations;
+using Smpp.Server.Handlers;
 using Smpp.Server.Interfaces;
 using Smpp.Server.Middlewares;
 using Smpp.Server.Models;
@@ -164,7 +165,7 @@ public class SmppServer : BackgroundService
     private async Task ProcessSessionAsync(ISmppSession session, CancellationToken cancellationToken)
     {
         while (!cancellationToken.IsCancellationRequested && 
-               (session is SmppSession regularSession && regularSession.IsConnected ||
+               (session is SmppSession regularSession && regularSession.IsAuthenticated ||
                 session is SslSmppSession sslSession && sslSession.IsSslAuthenticated))
         {
             try
@@ -236,18 +237,13 @@ public class SmppServer : BackgroundService
     
     public override async Task StopAsync(CancellationToken cancellationToken)
     {
-        _listener.Stop();
-
-        foreach (var session in _sessions.Values)
-        {
-            session.Close();
-            session.Dispose();
-        }
-
-        _sessions.Clear();
+        IsRunning = false;
+        await StopListenersAsync();
+        await CloseAllSessionsAsync();
         _connectionLimiter.Dispose();
-
+        
         await base.StopAsync(cancellationToken);
+        
     }
     
     /// <summary>
