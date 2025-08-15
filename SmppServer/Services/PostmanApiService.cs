@@ -110,8 +110,8 @@ public class PostmanApiService(
             var response = await httpClient.PostAsync(postmanFullUrl, content, cancellationToken);
             var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
 
-            logger.LogDebug("Postman API response status: {StatusCode}", response.StatusCode);
-            logger.LogDebug("Postman API response: {ResponseContent}", responseContent);
+            logger.LogInformation("Postman API response status: {StatusCode}", response.StatusCode);
+            logger.LogInformation("Postman API response: {ResponseContent}", responseContent);
 
             if (response.IsSuccessStatusCode)
             {

@@ -69,13 +69,14 @@ public class SmppSession : ISmppSession, IDisposable
             {
                 var bodyLength = (int)pdu.CommandLength - headerSize;
                 
+                /*
                 // Validate reasonable body length (prevent DoS)
                 if (bodyLength > 64 * 1024) // 64KB max
                 {
                     _logger.LogWarning("Session {SessionId} - PDU body too large: {BodyLength} bytes", Id, bodyLength);
                     return null;
                 }
-
+                */
                 var bodyBuffer = new byte[bodyLength];
                 bytesRead = await ReadExactAsync(bodyBuffer, bodyLength, cancellationToken);
 
@@ -120,7 +121,7 @@ public class SmppSession : ISmppSession, IDisposable
             await _stream.WriteAsync(data, 0, data.Length, cancellationToken);
             await _stream.FlushAsync(cancellationToken);
 
-            _logger.LogDebug("Session {SessionId} - PDU sent: CommandId=0x{CommandId:X8}, Length={Length}", 
+            _logger.LogInformation("Session {SessionId} - PDU sent: CommandId=0x{CommandId:X8}, Length={Length}", 
                 Id, pdu.CommandId, data.Length);
         }
         catch (Exception ex)

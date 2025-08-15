@@ -243,7 +243,7 @@ public class SmppServer : BackgroundService
         // Chain them together
         logging.SetNext(auth).SetNext(handler);
     
-        _logger.LogDebug("🔗 PDU processing pipeline built with SSL support");
+        _logger.LogDebug("PDU processing pipeline built with SSL support");
     
         return logging;
     }
