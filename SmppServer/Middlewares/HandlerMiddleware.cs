@@ -1,14 +1,28 @@
 ﻿using Smpp.Server.Constants;
+using Smpp.Server.Handlers;
 using Smpp.Server.Interfaces;
 using Smpp.Server.Models;
 
 namespace Smpp.Server.Middlewares;
 
-public class HandlerMiddleware(List<IPduHandler> handlers, ILogger<HandlerMiddleware> logger)
+public class HandlerMiddleware(IServiceProvider serviceProvider, ILogger<HandlerMiddleware> logger)
     : PduProcessingMiddleware
 {
     public override async Task<SmppPdu?> HandleAsync(SmppPdu pdu, ISmppSession session, CancellationToken cancellationToken)
     {
+        // Create a scope for this request to resolve scoped services
+        using var scope = serviceProvider.CreateScope();
+        var scopedProvider = scope.ServiceProvider;
+
+        // Get handlers from DI container using scoped provider
+        var handlers = new List<IPduHandler>
+        {
+            scopedProvider.GetRequiredService<BindTransceiverHandler>(),
+            scopedProvider.GetRequiredService<SubmitSmHandler>(),
+            scopedProvider.GetRequiredService<EnquireLinkHandler>(),
+            scopedProvider.GetRequiredService<UnbindHandler>()
+        };
+        
         foreach (var handler in handlers)
         {
             if (await handler.CanHandle(pdu))

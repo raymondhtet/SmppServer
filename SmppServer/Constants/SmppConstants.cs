@@ -61,4 +61,34 @@ public static class SmppConstants
         public const uint ESME_RINVPASWD = 0x0000000E;
         public const uint ESME_RINVSYSID = 0x0000000F;
     }
+    
+    public struct ConcatenationInfo
+    {
+        public ushort ReferenceNumber { get; set; }
+        public byte TotalParts { get; set; }
+        public byte PartNumber { get; set; }
+        public ConcatenationType Type { get; set; }
+    }
+    
+    public enum ConcatenationType
+    {
+        UDH,
+        SAR
+    }
+    
+    public struct UdhConcatenationData
+    {
+        public ushort ReferenceNumber { get; set; }
+        public byte TotalParts { get; set; }
+        public byte PartNumber { get; set; }
+        public int UdhLength { get; set; }
+    }
+
+    public struct SarConcatenationData
+    {
+        public ushort ReferenceNumber { get; set; }
+        public byte TotalParts { get; set; }
+        public byte PartNumber { get; set; }
+    }
+
 }

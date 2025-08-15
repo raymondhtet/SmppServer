@@ -165,7 +165,7 @@ public class SmppServer : BackgroundService
     private async Task ProcessSessionAsync(ISmppSession session, CancellationToken cancellationToken)
     {
         while (!cancellationToken.IsCancellationRequested && 
-               (session is SmppSession regularSession && regularSession.IsAuthenticated ||
+               (session is SmppSession regularSession && regularSession.IsConnected ||
                 session is SslSmppSession sslSession && sslSession.IsSslAuthenticated))
         {
             try
@@ -212,25 +212,16 @@ public class SmppServer : BackgroundService
     /// </summary>
     private PduProcessingMiddleware BuildProcessingPipeline()
     {
-        // Get handlers from DI container
-        var handlers = new List<IPduHandler>
-        {
-            _serviceProvider.GetRequiredService<BindTransceiverHandler>(),
-            _serviceProvider.GetRequiredService<SubmitSmHandler>(),
-            _serviceProvider.GetRequiredService<EnquireLinkHandler>(),
-            _serviceProvider.GetRequiredService<UnbindHandler>()
-        };
-
         // Build middleware chain: Logging -> Authentication -> Handler
         var logging = new LoggingMiddleware(_serviceProvider.GetRequiredService<ILogger<LoggingMiddleware>>());
-        var handler = new HandlerMiddleware(handlers, _serviceProvider.GetRequiredService<ILogger<HandlerMiddleware>>());
+        var handler = new HandlerMiddleware(_serviceProvider, _serviceProvider.GetRequiredService<ILogger<HandlerMiddleware>>());
         var auth = new SmppAuthenticationMiddleware(_serviceProvider.GetRequiredService<ILogger<SmppAuthenticationMiddleware>>());
 
         // Chain them together
         logging.SetNext(auth).SetNext(handler);
-        
+    
         _logger.LogDebug("🔗 PDU processing pipeline built with SSL support");
-        
+    
         return logging;
     }
 

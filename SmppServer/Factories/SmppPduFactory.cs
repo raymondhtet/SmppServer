@@ -10,8 +10,8 @@ public static class SmppPduFactory
     {
         var parser = new PduFieldParser(pdu.Body!);
         return new BindTransceiverRequest(
-            ServiceType: parser.ReadCString(),
-            SystemId: parser.SkipByte().SkipByte().ReadCString(),
+            ServiceType: "",
+            SystemId: parser.ReadCString(),
             Password: parser.ReadCString(),
             SystemType: parser.ReadCString(),
             InterfaceVersion: parser.ReadByte(),

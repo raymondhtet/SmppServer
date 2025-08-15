@@ -1,40 +1,30 @@
+using System.Text;
+using Smpp.Server.Constants;
+using Smpp.Server.Helpers;
 using Smpp.Server.Interfaces;
 using Smpp.Server.Models;
 using Smpp.Server.Models.DTOs;
 
 namespace Smpp.Server.Services;
 
-public class MessageConcatenationService : IMessageConcatenationService
+public class MessageConcatenationService(MessageTracker messageTracker, ILogger<MessageConcatenationService> logger)
+    : IMessageConcatenationService
 {
-    private readonly MessageTracker _messageTracker;
-    private readonly ILogger<MessageConcatenationService> _logger;
+    private readonly ILogger<MessageConcatenationService> _logger = logger;
 
-    public MessageConcatenationService(MessageTracker messageTracker, ILogger<MessageConcatenationService> logger)
+    public Task<ConcatenationResult> ProcessMessagePartAsync(
+        SmppConstants.ConcatenationInfo? concatInfo,
+        bool isMultipartMessage,
+        string message,
+        SubmitSmRequest request)
     {
-        _messageTracker = messageTracker;
-        _logger = logger;
-    }
-
-    public async Task<ConcatenationResult> ProcessMessagePartAsync(SubmitSmRequest request)
-    {
-        // Convert SubmitSmRequest back to SmppPdu for compatibility with existing MessageTracker
-        var pdu = ConvertToSmppPdu(request);
-        
-        var (isComplete, completeMessage) = _messageTracker.TrackMessageParts(
-            pdu, 
-            request.SourceAddress, 
+        var (isComplete, completeMessage) = messageTracker.TrackMessageParts(
+            concatInfo,
+            isMultipartMessage,
+            message,
+            request.SourceAddress,
             request.DestinationAddress);
 
-        return new ConcatenationResult(isComplete, completeMessage);
-    }
-
-    private static SmppPdu ConvertToSmppPdu(SubmitSmRequest request)
-    {
-        // Create a SmppPdu from SubmitSmRequest for compatibility
-        return new SmppPdu
-        {
-            Body = request.ShortMessage,
-            OptionalParameters = request.OptionalParameters
-        };
+        return Task.FromResult(new ConcatenationResult(isComplete, completeMessage));
     }
 }

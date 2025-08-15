@@ -15,7 +15,7 @@ public class ConfigurationAuthenticationService(
     {
         var isValid = systemId == _config.SessionUsername && password == _config.SessionPassword;
         
-        logger.LogDebug("Authentication attempt for {SystemId}: {Result}", systemId, isValid ? "Success" : "Failed");
+        logger.LogInformation("Authentication attempt for {SystemId}: {Result}", systemId, isValid ? "Success" : "Failed");
         
         return Task.FromResult(isValid);
     }

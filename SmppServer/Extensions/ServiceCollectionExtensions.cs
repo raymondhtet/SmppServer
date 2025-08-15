@@ -13,7 +13,9 @@ public static class ServiceCollectionExtensions
         this IServiceCollection services,
         IConfiguration configure)
     {
-        services.Configure<SmppServerConfiguration>(configure);
+        services.Configure<SmppServerConfiguration>(configure.GetSection(nameof(SmppServerConfiguration)));
+        
+        services.Configure<PostmanApiConfiguration>(configure.GetSection(nameof(PostmanApiConfiguration)));
 
         services.AddHostedService<SmppServer>();
         services.AddSingleton<MessageTracker>();
@@ -24,10 +26,10 @@ public static class ServiceCollectionExtensions
 
         services.AddHttpClient<IExternalMessageService, PostmanApiService>();
         
-        services.AddScoped<IPduHandler, BindTransceiverHandler>();
-        services.AddScoped<IPduHandler, SubmitSmHandler>();
-        services.AddScoped<IPduHandler, EnquireLinkHandler>();
-        services.AddScoped<IPduHandler, UnbindHandler>();
+        services.AddScoped<BindTransceiverHandler>();
+        services.AddScoped<SubmitSmHandler>();
+        services.AddScoped<EnquireLinkHandler>();
+        services.AddScoped<UnbindHandler>();
 
 
         return services;

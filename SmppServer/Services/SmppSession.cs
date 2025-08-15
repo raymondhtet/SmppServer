@@ -20,6 +20,8 @@ public class SmppSession : ISmppSession, IDisposable
     
     public string SystemId { get; set; }
     public bool IsAuthenticated { get; set; }
+    
+    public bool IsConnected => _client?.Connected == true && !_disposed;
 
     public SmppSession(TcpClient client, ILogger logger)
     {
