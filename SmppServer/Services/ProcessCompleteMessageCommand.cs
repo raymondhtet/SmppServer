@@ -35,7 +35,14 @@ public class ProcessCompleteMessageCommand(
                 : DeliveryStatusHelper.Failed(result.ErrorCode);
 
             var messageId = "msg_" + Guid.NewGuid().ToString("N")[..8];
-            await deliveryReceiptSender.SendAsync(session, messageId, deliveryStatus);
+            
+            await deliveryReceiptSender.SendDeliveryReceiptAsync(
+                session,
+                sourceAddress,     // Original sender
+                destinationAddress, // Original recipient  
+                messageId,
+                deliveryStatus);
+
 
             if (result.IsSuccess)
             {
@@ -58,7 +65,11 @@ public class ProcessCompleteMessageCommand(
             try
             {
                 var errorMessageId = "msg_error_" + Guid.NewGuid().ToString("N")[..6];
-                await deliveryReceiptSender.SendAsync(session, errorMessageId, DeliveryStatusHelper.Undeliverable());
+                await deliveryReceiptSender.SendDeliveryReceiptAsync(session, 
+                                sourceAddress,
+                                destinationAddress,
+                                errorMessageId, 
+                                DeliveryStatusHelper.Undeliverable());
             }
             catch (Exception receiptEx)
             {

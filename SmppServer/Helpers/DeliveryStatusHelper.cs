@@ -7,7 +7,7 @@ public static class DeliveryStatusHelper
     public static DeliveryStatus Delivered() => new()
     {
         MessageState = Constants.SmppConstants.MessageState.DELIVERED,
-        ErrorStatus = "DELIVRD",
+        ErrorStatus = "DELIV",
         ErrorCode = "000"
     };
 

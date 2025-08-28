@@ -91,5 +91,12 @@ public static class SmppConstants
         public byte TotalParts { get; set; }
         public byte PartNumber { get; set; }
     }
-
+    
+    public static class EsmClass
+    {
+        /// <summary>
+        /// MC Delivery Receipt - equivalent to smpp.consts.ESM_CLASS.MC_DELIVERY_RECEIPT
+        /// </summary>
+        public const byte MC_DELIVERY_RECEIPT = 0x04;
+    }
 }

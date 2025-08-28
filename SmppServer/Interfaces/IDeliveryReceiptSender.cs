@@ -4,6 +4,16 @@ namespace Smpp.Server.Interfaces;
 
 public interface IDeliveryReceiptSender
 {
-    Task SendAsync(ISmppSession session, string messageId, DeliveryStatus status);
+    /// <summary>
+    /// Send enhanced delivery receipt with full addressing
+    /// </summary>
+    Task SendDeliveryReceiptAsync(
+        ISmppSession session, 
+        string sourceAddress,
+        String destinationAddress,
+        string messageId, 
+        DeliveryStatus status,
+        DateTime? submitDate = null,
+        DateTime? doneDate = null);
 
 }
