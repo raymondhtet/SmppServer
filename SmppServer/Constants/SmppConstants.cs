@@ -41,6 +41,7 @@ public static class SmppConstants
         public const uint CancelSmResp = 0x80000008;
         public const uint BindTransceiverResp = 0x80000009;
         public const uint EnquireLinkResp = 0x80000015;
+        public const uint DataSm = 0x00000103;
     }
 
     public static class SmppCommandStatus

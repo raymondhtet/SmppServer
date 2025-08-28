@@ -213,57 +213,55 @@ public static class ConcatenationHelper
             // For UDH messages, skip the UDH header
             var udhInfo = concatInfo.Value;
             var shortMessage = request.ShortMessage;
-            
-            if (shortMessage != null && shortMessage.Length > 0)
-            {
-                var udhl = shortMessage[0];
-                var messageStart = 1 + udhl; // Skip UDHL + UDH data
+
+            if (shortMessage is not { Length: > 0 }) return string.Empty;
+            var udhl = shortMessage[0];
+            var messageStart = 1 + udhl; // Skip UDHL + UDH data
                 
-                if (messageStart < shortMessage.Length)
-                {
-                    var messageData = new byte[shortMessage.Length - messageStart];
-                    Array.Copy(shortMessage, messageStart, messageData, 0, messageData.Length);
+            if (messageStart < shortMessage.Length)
+            {
+                var messageData = new byte[shortMessage.Length - messageStart];
+                Array.Copy(shortMessage, messageStart, messageData, 0, messageData.Length);
                     
-                    //Console.WriteLine($"Extracted message data: {Convert.ToHexString(messageData)}");
-                    
-                    // Decode based on data coding
-                    return DecodeMessage(messageData, request.DataCoding);
-                }
+                // Decode based on data coding
+                return DecodeMessage(messageData, request.MessagePayload, request.DataCoding);
             }
         }
         else if (concatInfo?.Type == SmppConstants.ConcatenationType.SAR)
         {
             // For SAR, the entire short message is the content
-            return DecodeMessage(request.ShortMessage, request.DataCoding);
+            return DecodeMessage(request.ShortMessage, request.MessagePayload, request.DataCoding);
         }
         else
         {
             // Single message
-            return DecodeMessage(request.ShortMessage, request.DataCoding);
+            return DecodeMessage(request.ShortMessage, request.MessagePayload, request.DataCoding);
         }
 
         return string.Empty;
     }
 
-    private static string DecodeMessage(byte[] data, byte dataCoding)
+    private static string DecodeMessage(byte[]? shortMessage, byte[]? messagePayload, byte dataCoding)
     {
-        if (data == null || data.Length == 0)
+        if ((shortMessage == null || shortMessage.Length == 0) && (messagePayload == null || messagePayload.Length == 0))
             return string.Empty;
-
+        
         try
         {
+            var data = shortMessage!.Length > 0 ? shortMessage : messagePayload!;
+            
             return dataCoding switch
             {
-                0x00 => Encoding.UTF8.GetString(data), // GSM 7-bit (simplified)
-                0x01 => Encoding.ASCII.GetString(data),
-                0x03 => Encoding.GetEncoding("ISO-8859-1").GetString(data),
-                0x08 => Encoding.BigEndianUnicode.GetString(data),
-                _ => Encoding.UTF8.GetString(data)
+                0x00 => Encoding.UTF8.GetString(shortMessage), // GSM 7-bit (simplified)
+                0x01 => Encoding.ASCII.GetString(shortMessage),
+                0x03 => Encoding.GetEncoding("ISO-8859-1").GetString(shortMessage),
+                0x08 => Encoding.BigEndianUnicode.GetString(shortMessage),
+                _ => Encoding.UTF8.GetString(shortMessage)
             };
         }
         catch
         {
-            return Encoding.UTF8.GetString(data);
+            return Encoding.UTF8.GetString(shortMessage);
         }
     }
 

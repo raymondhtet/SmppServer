@@ -29,6 +29,8 @@ public record SubmitSmRequest
     public byte DataCoding { get; init; }
     public byte SmDefaultMsgId { get; init; }
     public byte[] ShortMessage { get; init; } = [];
+    
+    public byte[] MessagePayload { get; init; } = [];
     public Dictionary<ushort, byte[]> OptionalParameters { get; init; } = new();
 }
 

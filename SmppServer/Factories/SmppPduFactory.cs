@@ -45,7 +45,8 @@ public static class SmppPduFactory
             DataCoding = parser.ReadByte(),
             SmDefaultMsgId = parser.ReadByte(),
             ShortMessage = parser.ReadShortMessage(),
-            OptionalParameters = pdu.OptionalParameters
+            OptionalParameters = pdu.OptionalParameters,
+            MessagePayload = pdu.ReadMessagePayload(),
         };
 
         return request;

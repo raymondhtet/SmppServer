@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using Smpp.Server.Helpers;
+using Smpp.Server.Models.DTOs;
 
 namespace Smpp.Server.Models;
 
@@ -28,103 +29,17 @@ public class SmppPdu
         CommandStatus = BitConverter.ToUInt32(headerData.Skip(8).Take(4).Reverse().ToArray());
         SequenceNumber = BitConverter.ToUInt32(headerData.Skip(12).Take(4).Reverse().ToArray());
     }
-
-    public string GetSourceAddress 
-    {
-        get
-        {
-            try 
-            {
-                if (Body == null || Body.Length < 10)
-                    return "";
-
-                var offset = GetSourceAddressOffset();
-                return offset != -1 ? GetString(offset) : "";
-            }
-            catch (Exception)
-            {
-                return "";
-            }
-        }
-    }
-
-
-
-    public string GetDestinationAddress
-    {
-        get
-        {
-            try
-            {
-                if (Body == null || Body.Length < 15)
-                    return "";
-
-                var offset = GetDestinationAddressOffset();
-                return offset != -1 ? GetString(offset) : "";
-            }
-            catch (Exception)
-            {
-                return "";
-            }
-        }
-    }
-
-    // NEW: Helper method to find source address offset
-    private int GetSourceAddressOffset()
-    {
-        try
-        {
-            var offset = 0;
-            
-            // Skip service_type (null-terminated string)
-            while (offset < Body!.Length && Body[offset] != 0) 
-                offset++;
-            offset++; // Skip null terminator
-
-            // Skip source_addr_ton (1 byte) and source_addr_npi (1 byte)
-            offset += 2;
-
-            // Now at source_addr
-            return offset < Body.Length ? offset : -1;
-        }
-        catch
-        {
-            return -1;
-        }
-    }
-
-    // NEW: Helper method to find destination address offset
-    private int GetDestinationAddressOffset()
-    {
-        try
-        {
-            var offset = 0;
-            
-            // Skip service_type (null-terminated string)
-            while (offset < Body!.Length && Body[offset] != 0) 
-                offset++;
-            offset++; // Skip null terminator
-
-            // Skip source_addr_ton (1 byte) and source_addr_npi (1 byte)
-            offset += 2;
-
-            // Skip source_addr (null-terminated string)
-            while (offset < Body.Length && Body[offset] != 0) 
-                offset++;
-            offset++; // Skip null terminator
-
-            // Skip dest_addr_ton (1 byte) and dest_addr_npi (1 byte)
-            offset += 2;
-
-            // Now at destination_addr
-            return offset < Body.Length ? offset : -1;
-        }
-        catch
-        {
-            return -1;
-        }
-    }
     
+    public byte[] ReadMessagePayload()
+    {
+        foreach (var param in OptionalParameters.Where(param => param.Key == 0x0424))
+        {
+            return param.Value;
+        }
+
+        return [];
+    }
+
     public byte[] GetBytes()
     {
         var headerLength = 16;
@@ -166,69 +81,169 @@ public class SmppPdu
         return Body?[offset] ?? 0;
     }
 
-    public (string Message, int DataEncoding) GetMessageContent()
-    {
-        return MessageParser.ExtractMessageFromPdu(this);
-    }
-
     public void ParseOptionalParameters()
     {
-        var currentIndex = GetOptionalParamsStartIndex();
+        OptionalParameters.Clear();
 
-        while (currentIndex < Body?.Length - 3) // Minimum 4 bytes needed (2 for tag, 2 for length)
+        var startIndex = GetOptionalParamsStartIndex();
+
+        Console.WriteLine($"DEBUG: Body length: {Body.Length}, Optional params start at: {startIndex}");
+        Console.WriteLine($"DEBUG: Body hex: {Convert.ToHexString(Body)}");
+
+        if (startIndex >= Body?.Length)
         {
-            var tag = BitConverter.ToUInt16(Body?.Skip(currentIndex).Take(2).Reverse().ToArray());
-            var length = BitConverter.ToUInt16(Body?.Skip(currentIndex + 2).Take(2).Reverse().ToArray());
+            Console.WriteLine("No optional parameters found - start index beyond body length");
+            return;
+        }
 
-            if (currentIndex + 4 + length <= Body?.Length)
+        Console.WriteLine($"Parsing optional parameters starting at index {startIndex}, body length: {Body?.Length}");
+
+        var currentIndex = startIndex;
+        var paramCount = 0;
+
+        while (currentIndex <= (Body?.Length ?? 0) - 4) // Need at least 4 bytes (2 for tag, 2 for length)
+        {
+            if (currentIndex + 4 > Body?.Length)
             {
-                byte[]? value = Body?.Skip(currentIndex + 4).Take(length).ToArray();
-                OptionalParameters[tag] = value;
+                Console.WriteLine($"Not enough bytes for next optional parameter at index {currentIndex}");
+                break;
             }
 
+            // Read tag (2 bytes, big-endian)
+            var tag = (ushort)((Body![currentIndex] << 8) | Body[currentIndex + 1]);
+
+            // Read length (2 bytes, big-endian)
+            var length = (ushort)((Body[currentIndex + 2] << 8) | Body[currentIndex + 3]);
+
+            Console.WriteLine($"Optional param #{paramCount + 1}: Tag=0x{tag:X4}, Length={length}");
+
+            // Validate length
+            if (currentIndex + 4 + length > Body.Length)
+            {
+                Console.WriteLine($"Optional parameter length {length} exceeds remaining body bytes");
+                break;
+            }
+
+            // Read value
+            byte[] value;
+            if (length > 0)
+            {
+                value = new byte[length];
+                Array.Copy(Body, currentIndex + 4, value, 0, length);
+            }
+            else
+            {
+                value = Array.Empty<byte>();
+            }
+
+            OptionalParameters[tag] = value;
+            Console.WriteLine($"Added optional parameter: Tag=0x{tag:X4}, Value={Convert.ToHexString(value)}");
+
             currentIndex += 4 + length;
+            paramCount++;
+
+            // Safety check to prevent infinite loops
+            if (paramCount > 100)
+            {
+                Console.WriteLine("Too many optional parameters, stopping parsing");
+                break;
+            }
         }
+
+        Console.WriteLine($"Parsed {paramCount} optional parameters");
     }
-    
+
+    /// <summary>
+    /// Fixed calculation of where optional parameters start
+    /// </summary>
     private int GetOptionalParamsStartIndex()
     {
-        // Calculate the start index of optional parameters
-        // This depends on your PDU structure and mandatory parameters
-        // You'll need to implement this based on your PDU format
-        
-        // Example implementation:
-        int index = 0;
-        
-        // Skip service_type (null-terminated string)
-        while (index < Body?.Length && Body[index] != 0) index++;
-        index++; // Skip null terminator
+        if (Body == null || Body.Length == 0)
+        {
+            Console.WriteLine("DEBUG: No body for optional params calculation");
+            return 0;
+        }
 
-        // Skip source_addr_ton and source_addr_npi
-        index += 2;
+        Console.WriteLine($"DEBUG: Calculating start index for body of {Body.Length} bytes");
 
-        // Skip source_addr (null-terminated string)
-        while (index < Body?.Length && Body[index] != 0) index++;
-        index++;
+        var parser = new PduFieldParser(Body);
 
-        // Skip dest_addr_ton and dest_addr_npi
-        index += 2;
+        // Parse all mandatory submit_sm fields
+        var serviceType = parser.ReadCString();
+        Console.WriteLine($"DEBUG: service_type='{serviceType}' (offset: {parser.Offset})");
 
-        // Skip destination_addr (null-terminated string)
-        while (index < Body?.Length && Body[index] != 0) index++;
-        index++;
+        parser.ReadByte(); // source_addr_ton
+        parser.ReadByte(); // source_addr_npi
+        Console.WriteLine($"DEBUG: source TON/NPI (offset: {parser.Offset})");
 
-        // Skip other mandatory parameters
-        index += 5; // esm_class, protocol_id, priority_flag, schedule_delivery_time, validity_period
-        
-        // Skip registered_delivery, replace_if_present_flag, data_coding, sm_default_msg_id
-        index += 4;
+        var sourceAddr = parser.ReadCString();
+        Console.WriteLine($"DEBUG: source_addr='{sourceAddr}' (offset: {parser.Offset})");
 
-        // Skip sm_length and short_message
-        var smLength = Body![index];
-        index += 1 + smLength;
+        parser.ReadByte(); // dest_addr_ton
+        parser.ReadByte(); // dest_addr_npi
+        Console.WriteLine($"DEBUG: dest TON/NPI (offset: {parser.Offset})");
 
-        return index;
+        var destAddr = parser.ReadCString();
+        Console.WriteLine($"DEBUG: dest_addr='{destAddr}' (offset: {parser.Offset})");
+
+        parser.ReadByte(); // esm_class
+        parser.ReadByte(); // protocol_id
+        parser.ReadByte(); // priority_flag
+        Console.WriteLine($"DEBUG: esm/protocol/priority (offset: {parser.Offset})");
+
+        var scheduleTime = parser.ReadCString();
+        Console.WriteLine($"DEBUG: schedule_time='{scheduleTime}' (offset: {parser.Offset})");
+
+        var validityPeriod = parser.ReadCString();
+        Console.WriteLine($"DEBUG: validity_period='{validityPeriod}' (offset: {parser.Offset})");
+
+        parser.ReadByte(); // registered_delivery
+        parser.ReadByte(); // replace_if_present_flag
+        parser.ReadByte(); // data_coding
+        parser.ReadByte(); // sm_default_msg_id
+        Console.WriteLine($"DEBUG: reg_del/replace/data_coding/sm_default (offset: {parser.Offset})");
+
+        // CRITICAL: Handle sm_length and short_message properly
+        if (parser.RemainingBytes > 0)
+        {
+            var smLength = parser.ReadByte();
+            Console.WriteLine($"DEBUG: sm_length={smLength} (offset: {parser.Offset})");
+
+            if (smLength > 0)
+            {
+                if (parser.RemainingBytes >= smLength)
+                {
+                    var shortMessage = parser.ReadBytes(smLength);
+                    Console.WriteLine(
+                        $"DEBUG: short_message={Convert.ToHexString(shortMessage)} (offset: {parser.Offset})");
+                }
+                else
+                {
+                    Console.WriteLine(
+                        $"DEBUG: WARNING - sm_length={smLength} but only {parser.RemainingBytes} bytes remaining");
+                    // Skip remaining bytes
+                    parser.Skip(parser.RemainingBytes);
+                }
+            }
+        }
+        else
+        {
+            Console.WriteLine($"DEBUG: No bytes left for sm_length field");
+        }
+
+        var finalOffset = parser.Offset;
+        Console.WriteLine($"DEBUG: Optional parameters start at offset {finalOffset}");
+        Console.WriteLine($"DEBUG: Remaining bytes: {parser.RemainingBytes}");
+
+        if (parser.RemainingBytes > 0)
+        {
+            var remaining = parser.GetRemainingData();
+            Console.WriteLine($"DEBUG: Remaining data: {Convert.ToHexString(remaining)}");
+        }
+
+        return finalOffset;
     }
+    
 
     public static class OptionalParameterTags
     {

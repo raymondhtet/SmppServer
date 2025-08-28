@@ -14,7 +14,7 @@ public class SubmitSmHandler(
     : IPduHandler
 {
     public Task<bool> CanHandle(SmppPdu pdu)
-        => Task.FromResult(pdu.CommandId == SmppConstants.SmppCommandId.SubmitSm);
+        => Task.FromResult(pdu.CommandId is SmppConstants.SmppCommandId.SubmitSm or SmppConstants.SmppCommandId.DataSm);
 
     public async Task<SmppPdu?> Handle(SmppPdu pdu, ISmppSession session, CancellationToken cancellationToken)
     {

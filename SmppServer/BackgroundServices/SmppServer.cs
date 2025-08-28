@@ -57,29 +57,6 @@ public class SmppServer : BackgroundService
     {
         try
         {
-            // testing postman
-            
-            var isRan = false;
-
-            if (!isRan)
-            {
-                _logger.LogInformation("Testing postman started");
-                IExternalMessageService externalMessageService =
-                    _serviceProvider.GetRequiredService<IExternalMessageService>();
-                var result = await externalMessageService.SendMessageAsync("systemId",
-                    "6597472115",
-                    "this is test message from postman",
-                    stoppingToken);
-
-                _logger.LogInformation(
-                    "Message sent? {IsSuccess}, Error Code: {ErrorCode}, Error Message: {ErrorMessage}",
-                    result.IsSuccess,
-                    result.ErrorCode,
-                    result.ErrorMessage);
-                _logger.LogInformation("Testing postman ended");
-                isRan = true;
-            }
-
             // Start cleanup background task
             _ = Task.Run(() => RunCleanupJob(stoppingToken), stoppingToken);
             

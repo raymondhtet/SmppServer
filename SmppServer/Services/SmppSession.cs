@@ -65,30 +65,21 @@ public class SmppSession : ISmppSession, IDisposable
                 Id, pdu.CommandLength, pdu.CommandId);
 
             // Read PDU body if present
-            if (pdu.CommandLength > headerSize)
-            {
-                var bodyLength = (int)pdu.CommandLength - headerSize;
+            if (pdu.CommandLength <= headerSize) return pdu;
+            
+            var bodyLength = (int)pdu.CommandLength - headerSize;
                 
-                /*
-                // Validate reasonable body length (prevent DoS)
-                if (bodyLength > 64 * 1024) // 64KB max
-                {
-                    _logger.LogWarning("Session {SessionId} - PDU body too large: {BodyLength} bytes", Id, bodyLength);
-                    return null;
-                }
-                */
-                var bodyBuffer = new byte[bodyLength];
-                bytesRead = await ReadExactAsync(bodyBuffer, bodyLength, cancellationToken);
+            var bodyBuffer = new byte[bodyLength];
+            bytesRead = await ReadExactAsync(bodyBuffer, bodyLength, cancellationToken);
 
-                if (bytesRead < bodyLength)
-                {
-                    _logger.LogDebug("Session {SessionId} - Incomplete body read: {BytesRead}/{Expected}", 
-                        Id, bytesRead, bodyLength);
-                    return null;
-                }
-
-                pdu.Body = bodyBuffer;
+            if (bytesRead < bodyLength)
+            {
+                _logger.LogDebug("Session {SessionId} - Incomplete body read: {BytesRead}/{Expected}", 
+                    Id, bytesRead, bodyLength);
+                return null;
             }
+
+            pdu.Body = bodyBuffer;
 
             return pdu;
         }
