@@ -30,6 +30,42 @@ public class SmppPdu
         SequenceNumber = BitConverter.ToUInt32(headerData.Skip(12).Take(4).Reverse().ToArray());
     }
     
+    public void ParseBody()
+    {
+        Body = Convert.FromHexString("000000313131313131310000003635393436353139373100000000003235303930333038313533393030302B0001000000274C6F72656D20697073756D20646F6C6F722073697420616D65742C20636F6E7365637465747572000500010012AB002863616D706169676E2D69643132333432313233313432343231343231353135313631313631363136");
+        
+        var parser = new PduFieldParser(Body!);
+        
+
+        var request = new SubmitSmRequest
+        {
+            ServiceType = parser.ReadCString(),
+            SourceAddrTon = parser.ReadByte(),
+            SourceAddrNpi = parser.ReadByte(),
+            SourceAddress = parser.ReadCString(),
+            DestAddrTon = parser.ReadByte(),
+            DestAddrNpi = parser.ReadByte(),
+            DestinationAddress = parser.ReadCString(),
+            EsmClass = parser.ReadByte(),
+            ProtocolId = parser.ReadByte(),
+            PriorityFlag = parser.ReadByte(),
+            ScheduleDeliveryTime = parser.ReadCString(),
+            ValidityPeriod = parser.ReadCString(),
+            RegisteredDelivery = parser.ReadByte(),
+            ReplaceIfPresentFlag = parser.ReadByte(),
+            DataCoding = parser.ReadByte(),
+            SmDefaultMsgId = parser.ReadByte(),
+            ShortMessage = parser.ReadShortMessage(),
+            MessagePayload = ReadMessagePayload(),
+            OptionalParameters = OptionalParameters
+        };
+        
+        ParseOptionalParameters(parser.Offset);
+        string campaignId = ReadCampaignId();
+        
+        Console.WriteLine(request);
+    }
+    
     public byte[] ReadMessagePayload()
     {
         foreach (var param in OptionalParameters.Where(param => param.Key == 0x0424))
@@ -38,6 +74,16 @@ public class SmppPdu
         }
 
         return [];
+    }
+    
+    public string ReadCampaignId()
+    {
+        foreach (var param in OptionalParameters.Where(param => param.Key == 0x12AB))
+        {
+            return Encoding.UTF8.GetString(param.Value);
+        }
+
+        return string.Empty;
     }
 
     public byte[] GetBytes()
@@ -81,11 +127,9 @@ public class SmppPdu
         return Body?[offset] ?? 0;
     }
 
-    public void ParseOptionalParameters()
+    public void ParseOptionalParameters(int startIndex)
     {
         OptionalParameters.Clear();
-
-        var startIndex = GetOptionalParamsStartIndex();
 
         Console.WriteLine($"DEBUG: Body length: {Body.Length}, Optional params start at: {startIndex}");
         Console.WriteLine($"DEBUG: Body hex: {Convert.ToHexString(Body)}");
@@ -153,97 +197,6 @@ public class SmppPdu
         Console.WriteLine($"Parsed {paramCount} optional parameters");
     }
 
-    /// <summary>
-    /// Fixed calculation of where optional parameters start
-    /// </summary>
-    private int GetOptionalParamsStartIndex()
-    {
-        if (Body == null || Body.Length == 0)
-        {
-            Console.WriteLine("DEBUG: No body for optional params calculation");
-            return 0;
-        }
-
-        Console.WriteLine($"DEBUG: Calculating start index for body of {Body.Length} bytes");
-
-        var parser = new PduFieldParser(Body);
-
-        // Parse all mandatory submit_sm fields
-        var serviceType = parser.ReadCString();
-        Console.WriteLine($"DEBUG: service_type='{serviceType}' (offset: {parser.Offset})");
-
-        parser.ReadByte(); // source_addr_ton
-        parser.ReadByte(); // source_addr_npi
-        Console.WriteLine($"DEBUG: source TON/NPI (offset: {parser.Offset})");
-
-        var sourceAddr = parser.ReadCString();
-        Console.WriteLine($"DEBUG: source_addr='{sourceAddr}' (offset: {parser.Offset})");
-
-        parser.ReadByte(); // dest_addr_ton
-        parser.ReadByte(); // dest_addr_npi
-        Console.WriteLine($"DEBUG: dest TON/NPI (offset: {parser.Offset})");
-
-        var destAddr = parser.ReadCString();
-        Console.WriteLine($"DEBUG: dest_addr='{destAddr}' (offset: {parser.Offset})");
-
-        parser.ReadByte(); // esm_class
-        parser.ReadByte(); // protocol_id
-        parser.ReadByte(); // priority_flag
-        Console.WriteLine($"DEBUG: esm/protocol/priority (offset: {parser.Offset})");
-
-        var scheduleTime = parser.ReadCString();
-        Console.WriteLine($"DEBUG: schedule_time='{scheduleTime}' (offset: {parser.Offset})");
-
-        var validityPeriod = parser.ReadCString();
-        Console.WriteLine($"DEBUG: validity_period='{validityPeriod}' (offset: {parser.Offset})");
-
-        parser.ReadByte(); // registered_delivery
-        parser.ReadByte(); // replace_if_present_flag
-        parser.ReadByte(); // data_coding
-        parser.ReadByte(); // sm_default_msg_id
-        Console.WriteLine($"DEBUG: reg_del/replace/data_coding/sm_default (offset: {parser.Offset})");
-
-        // CRITICAL: Handle sm_length and short_message properly
-        if (parser.RemainingBytes > 0)
-        {
-            var smLength = parser.ReadByte();
-            Console.WriteLine($"DEBUG: sm_length={smLength} (offset: {parser.Offset})");
-
-            if (smLength > 0)
-            {
-                if (parser.RemainingBytes >= smLength)
-                {
-                    var shortMessage = parser.ReadBytes(smLength);
-                    Console.WriteLine(
-                        $"DEBUG: short_message={Convert.ToHexString(shortMessage)} (offset: {parser.Offset})");
-                }
-                else
-                {
-                    Console.WriteLine(
-                        $"DEBUG: WARNING - sm_length={smLength} but only {parser.RemainingBytes} bytes remaining");
-                    // Skip remaining bytes
-                    parser.Skip(parser.RemainingBytes);
-                }
-            }
-        }
-        else
-        {
-            Console.WriteLine($"DEBUG: No bytes left for sm_length field");
-        }
-
-        var finalOffset = parser.Offset;
-        Console.WriteLine($"DEBUG: Optional parameters start at offset {finalOffset}");
-        Console.WriteLine($"DEBUG: Remaining bytes: {parser.RemainingBytes}");
-
-        if (parser.RemainingBytes > 0)
-        {
-            var remaining = parser.GetRemainingData();
-            Console.WriteLine($"DEBUG: Remaining data: {Convert.ToHexString(remaining)}");
-        }
-
-        return finalOffset;
-    }
-    
 
     public static class OptionalParameterTags
     {
@@ -252,4 +205,6 @@ public class SmppPdu
         public const ushort SAR_TOTAL_SEGMENTS = 0x020E;
         public const ushort SAR_SEGMENT_SEQNUM = 0x020F;
     }
+
+    
 }

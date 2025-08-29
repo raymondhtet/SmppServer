@@ -30,8 +30,8 @@ public record SubmitSmRequest
     public byte SmDefaultMsgId { get; init; }
     public byte[] ShortMessage { get; init; } = [];
     
-    public byte[] MessagePayload { get; init; } = [];
-    public Dictionary<ushort, byte[]> OptionalParameters { get; init; } = new();
+    public byte[] MessagePayload { get; set; } = [];
+    public Dictionary<ushort, byte[]> OptionalParameters { get; set; } = new();
 }
 
 public record ConcatenationResult(bool IsComplete, string? CompleteMessage = null);

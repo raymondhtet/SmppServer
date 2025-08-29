@@ -24,8 +24,7 @@ public static class SmppPduFactory
     public static SubmitSmRequest CreateSubmitSm(SmppPdu pdu)
     {
         var parser = new PduFieldParser(pdu.Body!);
-        pdu.ParseOptionalParameters();
-
+        
         var request = new SubmitSmRequest
         {
             ServiceType = parser.ReadCString(),
@@ -48,7 +47,8 @@ public static class SmppPduFactory
             OptionalParameters = pdu.OptionalParameters,
             MessagePayload = pdu.ReadMessagePayload(),
         };
-
+        pdu.ParseOptionalParameters(parser.Offset);
+        
         return request;
     }
 }
