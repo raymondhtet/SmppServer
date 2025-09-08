@@ -28,21 +28,7 @@ public class ProcessCompleteMessageCommand(
                 destinationAddress,
                 message,
                 cancellationToken);
-
-            // Send delivery receipt based on result
-            var deliveryStatus = result.IsSuccess
-                ? DeliveryStatusHelper.Delivered()
-                : DeliveryStatusHelper.Failed(result.ErrorCode);
-
-            var messageId = "msg_" + Guid.NewGuid().ToString("N")[..8];
             
-            await deliveryReceiptSender.SendDeliveryReceiptAsync(
-                session,
-                sourceAddress,     // Original sender
-                destinationAddress, // Original recipient  
-                messageId,
-                deliveryStatus);
-
 
             if (result.IsSuccess)
             {
@@ -51,6 +37,21 @@ public class ProcessCompleteMessageCommand(
             }
             else
             {
+                // Send delivery receipt based on result
+                var deliveryStatus = result.IsSuccess
+                    ? DeliveryStatusHelper.Delivered()
+                    : DeliveryStatusHelper.Failed(result.ErrorCode);
+
+                var messageId = "msg_" + Guid.NewGuid().ToString("N")[..8];
+            
+                await deliveryReceiptSender.SendDeliveryReceiptAsync(
+                    session,
+                    sourceAddress,     // Original sender
+                    destinationAddress, // Original recipient  
+                    messageId,
+                    deliveryStatus);
+
+                
                 logger.LogWarning("⚠Message processing failed: {ErrorMessage}", result.ErrorMessage);
             }
 

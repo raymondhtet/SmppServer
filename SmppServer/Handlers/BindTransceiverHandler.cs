@@ -32,15 +32,15 @@ public class BindTransceiverHandler(ILogger<BindTransceiverHandler> logger, IAut
                 logger.LogInformation("{SystemId} authenticated successfully", bindRequest.SystemId);
                 
                 return SmppResponseBuilder.Create()
-                    .AsBindTransceiverResponse(pdu.SequenceNumber, true)
+                    .AsBindTransceiverResponse(pdu.SequenceNumber, true, "")
                     .Build();
             }
             else
             {
-                logger.LogWarning("Authentication failed for {SystemId}", bindRequest.SystemId);
+                logger.LogWarning("Authentication failed for {SystemId}", "");
                 
                 var response = SmppResponseBuilder.Create()
-                    .AsBindTransceiverResponse(pdu.SequenceNumber, false)
+                    .AsBindTransceiverResponse(pdu.SequenceNumber, false, "")
                     .Build();
 
                 // Schedule session close after sending response
@@ -58,7 +58,7 @@ public class BindTransceiverHandler(ILogger<BindTransceiverHandler> logger, IAut
             logger.LogError(ex, "Error during bind_transceiver");
             
             return SmppResponseBuilder.Create()
-                .AsBindTransceiverResponse(pdu.SequenceNumber, false)
+                .AsBindTransceiverResponse(pdu.SequenceNumber, false, "")
                 .Build();
         }
     }

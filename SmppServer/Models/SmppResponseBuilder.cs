@@ -1,4 +1,5 @@
-﻿using Smpp.Server.Constants;
+﻿using System.Text;
+using Smpp.Server.Constants;
 
 namespace Smpp.Server.Models;
 
@@ -44,13 +45,16 @@ public class SmppResponseBuilder
         return this;
     }
 
-    public SmppResponseBuilder AsBindTransceiverResponse(uint sequenceNumber, bool isSuccess)
+    public SmppResponseBuilder AsBindTransceiverResponse(uint sequenceNumber, bool isSuccess, string systemId)
     {
         _response.CommandId = SmppConstants.SmppCommandId.BindTransceiverResp;
         _response.SequenceNumber = sequenceNumber;
         _response.CommandStatus = isSuccess 
             ? SmppConstants.SmppCommandStatus.ESME_ROK 
             : SmppConstants.SmppCommandStatus.ESME_RBINDFAIL;
+        var systemIdByteArray = Encoding.UTF8.GetBytes(systemId + char.MinValue);
+        _response.Body = systemIdByteArray;
+        
         return this;
     }
 
@@ -59,7 +63,8 @@ public class SmppResponseBuilder
         _response.CommandId = SmppConstants.SmppCommandId.SubmitSmResp;
         _response.SequenceNumber = sequenceNumber;
         _response.CommandStatus = SmppConstants.SmppCommandStatus.ESME_ROK;
-        _response.Body = System.Text.Encoding.ASCII.GetBytes(messageId);
+        var systemIdByteArray = Encoding.UTF8.GetBytes("" + char.MinValue);
+        _response.Body = systemIdByteArray;
         return this;
     }
 

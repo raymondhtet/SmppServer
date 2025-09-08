@@ -80,7 +80,7 @@ public class PduFieldParser(byte[] data)
     {
         var length = ReadByte();
         if (length == 0 || _offset + length > _data.Length)
-            return Array.Empty<byte>();
+            return [];
 
         var message = new byte[length];
         Array.Copy(_data, _offset, message, 0, length);
