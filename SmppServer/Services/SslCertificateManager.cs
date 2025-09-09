@@ -104,13 +104,6 @@ public class SslCertificateManager : ISslCertificateManager, IDisposable
         {
             _logger.LogDebug("Validating certificate: {Subject}", certificate.Subject);
 
-            // Check if certificate has private key
-            if (!certificate.HasPrivateKey)
-            {
-                _logger.LogError("Certificate does not have a private key");
-                return false;
-            }
-
             // Check expiration
             if (certificate.NotAfter <= DateTime.Now)
             {

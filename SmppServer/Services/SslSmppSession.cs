@@ -74,8 +74,6 @@ public class SslSmppSession : ISmppSession, IDisposable
             {
                 ServerCertificate = ServerCertificate,
                 ClientCertificateRequired = _sslConfig.RequireClientCertificate,
-                RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
-                    _sslConfig.CheckCertificateRevocation,
                 EnabledSslProtocols = ConvertSslProtocols(_sslConfig.SupportedProtocols),
                 CertificateRevocationCheckMode = _sslConfig.CheckCertificateRevocation
                     ? X509RevocationMode.Online
@@ -124,22 +122,24 @@ public class SslSmppSession : ISmppSession, IDisposable
         }
     }
 
+    /// <summary>
+    /// Read a PDU from the network stream
+    /// </summary>
     public async Task<SmppPdu?> ReadPduAsync(CancellationToken cancellationToken = default)
     {
-        if (_disposed || _isPaused || _sslStream == null || !_sslAuthenticated)
+        if (_disposed || _isPaused)
             return null;
 
         try
         {
             var headerSize = SmppConstants.HeaderSize;
-
             // Read PDU header (16 bytes)
             var headerBuffer = new byte[headerSize];
             var bytesRead = await ReadExactAsync(headerBuffer, headerSize, cancellationToken);
 
-            if (bytesRead < 16)
+            if (bytesRead < headerSize)
             {
-                _logger.LogDebug("Session {SessionId} - Incomplete SSL header read: {BytesRead}/16", Id, bytesRead);
+                _logger.LogDebug("Session {SessionId} - Incomplete header read: {BytesRead}/headerSize", Id, bytesRead);
                 return null;
             }
 
@@ -147,41 +147,43 @@ public class SslSmppSession : ISmppSession, IDisposable
             var pdu = new SmppPdu();
             pdu.ParseHeader(headerBuffer);
 
-            _logger.LogDebug("Session {SessionId} - SSL PDU header parsed: Length={Length}, CommandId=0x{CommandId:X8}",
+            _logger.LogDebug("Session {SessionId} - PDU header parsed: Length={Length}, CommandId=0x{CommandId:X8}", 
                 Id, pdu.CommandLength, pdu.CommandId);
 
             // Read PDU body if present
-            if (pdu.CommandLength > headerSize)
+            if (pdu.CommandLength <= headerSize) return pdu;
+            
+            var bodyLength = (int)pdu.CommandLength - headerSize;
+                
+            var bodyBuffer = new byte[bodyLength];
+            bytesRead = await ReadExactAsync(bodyBuffer, bodyLength, cancellationToken);
+
+            if (bytesRead < bodyLength)
             {
-                var bodyLength = (int)pdu.CommandLength - headerSize;
-
-                var bodyBuffer = new byte[bodyLength];
-                bytesRead = await ReadExactAsync(bodyBuffer, bodyLength, cancellationToken);
-
-                if (bytesRead < bodyLength)
-                {
-                    _logger.LogDebug("Session {SessionId} - Incomplete SSL body read: {BytesRead}/{Expected}",
-                        Id, bytesRead, bodyLength);
-                    return null;
-                }
-
-                pdu.Body = bodyBuffer;
+                _logger.LogDebug("Session {SessionId} - Incomplete body read: {BytesRead}/{Expected}", 
+                    Id, bytesRead, bodyLength);
+                return null;
             }
+
+            pdu.Body = bodyBuffer;
 
             return pdu;
         }
         catch (OperationCanceledException)
         {
-            _logger.LogDebug("Session {SessionId} - SSL PDU read cancelled", Id);
+            _logger.LogDebug("Session {SessionId} - PDU read cancelled", Id);
             return null;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Session {SessionId} - Error reading SSL PDU", Id);
+            _logger.LogError(ex, "Session {SessionId} - Error reading PDU", Id);
             return null;
         }
     }
 
+    /// <summary>
+    /// Send a PDU over the network stream
+    /// </summary>
     public async Task SendPduAsync(SmppPdu pdu, CancellationToken cancellationToken = default)
     {
         if (_disposed || _sslStream == null || !_sslAuthenticated)
@@ -195,12 +197,12 @@ public class SslSmppSession : ISmppSession, IDisposable
             await _sslStream.WriteAsync(data, 0, data.Length, cancellationToken);
             await _sslStream.FlushAsync(cancellationToken);
 
-            _logger.LogDebug("Session {SessionId} - SSL PDU sent: CommandId=0x{CommandId:X8}, Length={Length}",
-                Id, pdu.CommandId, data.Length);
+            _logger.LogInformation("Session {SessionId} - SSL PDU sent: CommandId=0x{CommandId:X8}, Length={Length}, Hex:{Hex}", 
+                Id, pdu.CommandId, data.Length, Convert.ToHexString(data));
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Session {SessionId} - Error sending SSL PDU", Id);
+            _logger.LogError(ex, "Session {SessionId} - Error sending PDU", Id);
             throw;
         }
         finally
@@ -320,18 +322,18 @@ public class SslSmppSession : ISmppSession, IDisposable
     /// <summary>
     /// Convert our SSL protocols enum to .NET SslProtocols
     /// </summary>
-    private static System.Security.Authentication.SslProtocols ConvertSslProtocols(SslProtocols protocols)
+    private static SslProtocols ConvertSslProtocols(SslProtocols protocols)
     {
-        var result = System.Security.Authentication.SslProtocols.None;
+        var result = SslProtocols.None;
 
         if (protocols.HasFlag(SslProtocols.Tls))
-            result |= System.Security.Authentication.SslProtocols.Tls;
+            result |= SslProtocols.Tls;
         if (protocols.HasFlag(SslProtocols.Tls11))
-            result |= System.Security.Authentication.SslProtocols.Tls11;
+            result |= SslProtocols.Tls11;
         if (protocols.HasFlag(SslProtocols.Tls12))
-            result |= System.Security.Authentication.SslProtocols.Tls12;
+            result |= SslProtocols.Tls12;
         if (protocols.HasFlag(SslProtocols.Tls13))
-            result |= System.Security.Authentication.SslProtocols.Tls13;
+            result |= SslProtocols.Tls13;
 
         return result;
     }

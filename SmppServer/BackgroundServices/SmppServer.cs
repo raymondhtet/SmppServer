@@ -244,13 +244,6 @@ public class SmppServer : BackgroundService
     {
         var tasks = new List<Task>();
 
-        // Start plain text listener
-        _plainTextListener = new TcpListener(IPAddress.Any, _serverConfiguration.Port);
-        _plainTextListener.Start();
-        _logger.LogInformation("Plain text SMPP listener started on port {Port}", _serverConfiguration.Port);
-        
-        tasks.Add(AcceptConnectionsAsync(_plainTextListener, false, cancellationToken));
-
         // Start SSL listener if enabled
         if (_sslConfig.Enabled && _serverCertificate != null)
         {
@@ -259,6 +252,15 @@ public class SmppServer : BackgroundService
             _logger.LogInformation("SSL SMPP listener started on port {Port}", _sslConfig.Port);
             
             tasks.Add(AcceptConnectionsAsync(_sslListener, true, cancellationToken));
+        }
+        else
+        {
+            // Start plain text listener
+            _plainTextListener = new TcpListener(IPAddress.Any, _serverConfiguration.Port);
+            _plainTextListener.Start();
+            _logger.LogInformation("Plain text SMPP listener started on port {Port}", _serverConfiguration.Port);
+            
+            tasks.Add(AcceptConnectionsAsync(_plainTextListener, false, cancellationToken));
         }
 
         await Task.WhenAll(tasks);

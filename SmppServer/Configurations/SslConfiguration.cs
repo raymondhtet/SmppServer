@@ -61,7 +61,7 @@ public class SslConfiguration
     /// <summary>
     /// Allow self-signed certificates (for development/testing only)
     /// </summary>
-    public bool AllowSelfSignedCertificates { get; set; } = false;
+    public bool AllowSelfSignedCertificates { get; set; } = true;
 
     /// <summary>
     /// Trusted CA certificate paths for client certificate validation
