@@ -20,6 +20,7 @@ public class SmppServer : BackgroundService
     private readonly ConcurrentDictionary<string, ISmppSession> _sessions;
     private readonly SemaphoreSlim _connectionLimiter;
     private readonly PduProcessingMiddleware _processingPipeline;
+    private readonly ConfigurationCache _configurationCache;
     
     private readonly SslConfiguration _sslConfig;
     private readonly ISslCertificateManager _certificateManager;
@@ -33,7 +34,8 @@ public class SmppServer : BackgroundService
         IServiceProvider serviceProvider,
         IOptions<SmppServerConfiguration> config,
         IOptions<SslConfiguration> sslConfig,
-        ISslCertificateManager certificateManager
+        ISslCertificateManager certificateManager,
+        ConfigurationCache configurationCache
     )
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -41,7 +43,7 @@ public class SmppServer : BackgroundService
         _serverConfiguration = config.Value ?? throw new ArgumentNullException(nameof(config));
         _sslConfig = sslConfig.Value ?? throw new ArgumentNullException(nameof(sslConfig));
         _certificateManager = certificateManager ?? throw new ArgumentNullException(nameof(certificateManager));
-        
+        _configurationCache = configurationCache ?? throw new ArgumentNullException(nameof(configurationCache));
         _sessions = new ConcurrentDictionary<string, ISmppSession>();
         _connectionLimiter = new SemaphoreSlim(_serverConfiguration.MaxConcurrentConnections);
         
