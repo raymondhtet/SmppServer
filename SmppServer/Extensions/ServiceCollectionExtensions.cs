@@ -20,7 +20,6 @@ public static class ServiceCollectionExtensions
 
         services.AddHostedService<SmppServer>();
         services.AddSingleton<MessageTracker>();
-        services.AddSingleton<MessageParser>();
         services.AddScoped<IAuthenticationService, ConfigurationAuthenticationService>();
         services.AddScoped<IMessageConcatenationService, MessageConcatenationService>();
         services.AddScoped<IMessageProcessor, MessageProcessor>();
