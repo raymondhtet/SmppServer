@@ -24,6 +24,7 @@ public static class SmppConstants
         public const uint BindTransmitter = 0x00000002;
         public const uint QuerySm = 0x00000003;
         public const uint SubmitSm = 0x00000004;
+        public const uint DataSm = 0x00000103;
         public const uint DeliverSm = 0x00000005;
         public const uint Unbind = 0x00000006;
         public const uint ReplaceSm = 0x00000007;
