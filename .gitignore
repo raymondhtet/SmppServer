@@ -2,7 +2,11 @@
 # This .gitignore file was automatically created by Microsoft(R) Visual Studio.
 ################################################################################
 
-/.idea
-/.vs/SmppServer
-/SmppServer/bin
-/SmppServer/obj
+/.vs
+/src/sg.gov.cpf.esvc.smpp.server/.vs
+/src/sg.gov.cpf.esvc.smpp.server/bin
+/src/sg.gov.cpf.esvc.smpp.server/obj
+/test/sg.gov.cpf.esvc.smpp.client/bin
+/test/sg.gov.cpf.esvc.smpp.client/obj
+/src/sg.gov.cpf.esvc.smpp.server/sg.gov.cpf.esvc.smpp.server.csproj.user
+/src/sg.gov.cpf.esvc.smpp.server/Properties
