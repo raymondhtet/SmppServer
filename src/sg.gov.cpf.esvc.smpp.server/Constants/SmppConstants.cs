@@ -107,5 +107,12 @@
             /// </summary>
             public const byte MC_DELIVERY_RECEIPT = 0x04;
         }
+
+        internal static class TelemetryConstants
+        {
+            internal const string OperationID = "OperationID";
+            internal const string ActionID = "ActionID";
+            internal const string UserID = "UserID";
+        }
     }
 }
