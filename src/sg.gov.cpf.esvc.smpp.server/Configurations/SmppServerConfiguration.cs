@@ -4,7 +4,7 @@ public class SmppServerConfiguration
 {
     public int Port { get; set; } = 2775;
     
-    public int MaxConcurrentConnections { get; set; } = 10;
+    public int MaxConcurrentConnections { get; set; } = 1000;
 
     public string StaleCleanUpInterval { get; set; } = "00:01:00";
     

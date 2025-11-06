@@ -2,6 +2,15 @@
 {
     public class WhitelistedSmsConfiguration
     {
-        public List<string> WhitelistedMobileNumbers { get; set; } = [];
+        public List<WhitelistedInfo> WhitelistedMobileNumbers { get; set; } = [];
+    }
+
+    public class WhitelistedInfo
+    {
+        public string? MobileNumber { get; set; }
+
+        public int Delay { get; set; }
+
+        public bool IsSentSMS { get; set; }
     }
 }

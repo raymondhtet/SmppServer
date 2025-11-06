@@ -19,7 +19,7 @@
 
         public string SslServerCertificateName { get; set; } = string.Empty;
 
-        public string SslServerCertificatePassphrase { get; set; } = string.Empty;
+        public string? SslServerCertificatePassphrase { get; set; } = string.Empty;
 
         public string CampaignApiKeyMappingName { get; set; } = string.Empty;
 

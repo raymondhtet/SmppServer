@@ -45,9 +45,21 @@ public class PostmanApiService(
 
             if (environmentVariables.IsWhitelistedEnabled)
             {
-                if (_whitelistedSmsConfiguration.WhitelistedMobileNumbers.Contains(recipientMobileNumber))
+                var whitelistedNumber = _whitelistedSmsConfiguration.WhitelistedMobileNumbers.FirstOrDefault(w => w.MobileNumber == recipientMobileNumber);
+                if (whitelistedNumber != null)
                 {
-                    return await TriggerPostmanApi(message, messageId, recipientMobileNumber, campaignId, cancellationToken);
+                    if (whitelistedNumber.IsSentSMS)
+                    {
+                        logger.LogInformation("Sending actual sms through postman");
+                        return await TriggerPostmanApi(message, messageId, recipientMobileNumber, campaignId, cancellationToken);
+                    }
+                    else
+                    {
+                        logger.LogInformation("Simulating delay from postman API and delay for mobile number {MobileNumber} is {Delay} Seconds", 
+                            whitelistedNumber.MobileNumber, whitelistedNumber.Delay);
+                        await Task.Delay(TimeSpan.FromSeconds(whitelistedNumber.Delay), cancellationToken);
+                        return new ExternalServiceResult(true, ID: messageId);
+                    }
                 }
 
                 telemetryClient.TrackTrace($"The recipient mobile number is not whitelisted yet ({recipientMobileNumber})");
@@ -111,7 +123,15 @@ public class PostmanApiService(
         }
         else
         {
-            telemetryClient.TrackException(new PostmanException(result.ErrorMessage, result.ErrorCode, result.ErrorCode, campaignId, recipientMobileNumber.Substring(6), result.ID, messageId));
+            telemetryClient.TrackException(new PostmanException(
+                result.ErrorMessage,
+                result.ErrorCode,
+                result.ErrorCode,
+                campaignId,
+                recipientMobileNumber.Substring(6),
+                result.ID,
+                messageId,
+                result.ErrorStackTrace));
             return new ExternalServiceResult(IsSuccess: false, ErrorMessage: result.ErrorMessage, ErrorCode: result.ErrorCode, ID: result.ID);
         }
     }
@@ -206,8 +226,9 @@ public class PostmanApiService(
             return new PostmanApiResult
             {
                 IsSuccess = false,
-                ErrorMessage = ex.Message,
-                ErrorCode = "005"
+                ErrorMessage = "HTTP error occurred while calling Postman API:" + ex.Message,
+                ErrorCode = "005",
+                ErrorStackTrace = ex.StackTrace
             };
         }
         catch (TaskCanceledException ex)
@@ -216,18 +237,20 @@ public class PostmanApiService(
             return new PostmanApiResult
             {
                 IsSuccess = false,
-                ErrorMessage = "Request timeout",
-                ErrorCode = "005"
+                ErrorMessage = "Postman API request timed out" + ex.Message,
+                ErrorCode = "005",
+                ErrorStackTrace = ex.StackTrace
             };
         }
-        catch (JsonException)
+        catch (JsonException ex)
         {
             logger.LogError("Failed to parse Postman API error response: {ResponseContent}", responseContent);
             return new PostmanApiResult
             {
                 IsSuccess = false,
-                ErrorMessage = $"HTTP {response.StatusCode}: {responseContent}",
-                ErrorCode = "005"
+                ErrorMessage = $"HTTP {response.StatusCode}: {responseContent}:" + ex.Message,
+                ErrorCode = "005",
+                ErrorStackTrace = ex.StackTrace
             };
         }
         catch (Exception ex)
@@ -237,6 +260,7 @@ public class PostmanApiService(
             {
                 IsSuccess = false,
                 ErrorMessage = ex.Message,
+                ErrorStackTrace = ex.StackTrace,
                 ErrorCode = "005"
             };
         }

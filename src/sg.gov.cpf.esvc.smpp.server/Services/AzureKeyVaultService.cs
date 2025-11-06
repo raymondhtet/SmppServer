@@ -24,8 +24,7 @@ namespace sg.gov.cpf.esvc.smpp.server.Services
         public string? SessionPassword { get => sessionPassword ?? ""; }
 
         private string? sessionPassword { get; set; }
-        public X509Certificate2? ServerCertificate { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-
+        
         private X509Certificate2? _serverCertificate;
 
         public AzureKeyVaultService(ILogger<AzureKeyVaultService> logger,
@@ -49,7 +48,8 @@ namespace sg.gov.cpf.esvc.smpp.server.Services
         private X509Certificate2 LoadServerCertificate()
         {
             _telemetryClient.TrackTrace("Loading server certificate");
-            var certPassword = GetSecret(_environmentVariables.SslServerCertificatePassphrase);
+            var certPassword = string.IsNullOrWhiteSpace(_environmentVariables.SslServerCertificatePassphrase) 
+                ? string.Empty : GetSecret(_environmentVariables.SslServerCertificatePassphrase);
             return GetCertificateFromSecret(_environmentVariables.SslServerCertificateName, certPassword) ?? throw new Exception("unable to load server certificate");
         }
 

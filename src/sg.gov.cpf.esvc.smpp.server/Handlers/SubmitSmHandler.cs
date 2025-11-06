@@ -5,6 +5,7 @@ using sg.gov.cpf.esvc.smpp.server.Factories;
 using sg.gov.cpf.esvc.smpp.server.Helpers;
 using sg.gov.cpf.esvc.smpp.server.Interfaces;
 using sg.gov.cpf.esvc.smpp.server.Models;
+using System.Diagnostics;
 
 namespace sg.gov.cpf.esvc.smpp.server.Handlers;
 
@@ -22,6 +23,8 @@ public class SubmitSmHandler(
     {
         try
         {
+            var stopwatch = Stopwatch.StartNew();
+
             var messageId = GenerateMessageId();
             using var _ = telemetryClient.StartOperation<RequestTelemetry>(nameof(SubmitSmHandler));
             telemetryClient.Context.Operation.Id = messageId;
@@ -67,6 +70,8 @@ public class SubmitSmHandler(
                     cancellationToken);
             }
 
+            stopwatch.Stop();
+            telemetryClient.TrackTrace($"Total execution time for message id ({messageId}) is {stopwatch.Elapsed.TotalSeconds} seconds");
 
             return response;
         }

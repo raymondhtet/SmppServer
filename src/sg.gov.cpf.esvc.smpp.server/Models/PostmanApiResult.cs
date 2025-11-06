@@ -8,5 +8,7 @@ public class PostmanApiResult
     public string? MessageState { get; set; }
     public string? ErrorStatus { get; set; }
 
+    public string? ErrorStackTrace { get; set; }
+
     public string? ID { get; set; }
 }

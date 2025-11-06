@@ -5,6 +5,7 @@ using sg.gov.cpf.esvc.smpp.server.Exceptions;
 using sg.gov.cpf.esvc.smpp.server.Extensions;
 using sg.gov.cpf.esvc.smpp.server.Interfaces;
 using sg.gov.cpf.esvc.smpp.server.Models;
+using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Authentication;
@@ -79,7 +80,7 @@ public class SslSmppSession : ISmppSession, IDisposable
             {
                 ServerCertificate = ServerCertificate,
                 ClientCertificateRequired = _sslConfig.RequireClientCertificate,
-                EnabledSslProtocols = ConvertSslProtocols(_sslConfig.SupportedProtocols),
+                EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
                 CertificateRevocationCheckMode = _sslConfig.CheckCertificateRevocation
                     ? X509RevocationMode.Online
                     : X509RevocationMode.NoCheck,

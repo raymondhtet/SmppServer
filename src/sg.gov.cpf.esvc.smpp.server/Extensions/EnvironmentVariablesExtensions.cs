@@ -17,7 +17,7 @@ namespace sg.gov.cpf.esvc.smpp.server.Extensions
                 IsWhitelistedEnabled = GetBooleanValue("WHITEDLISTED_ENABLED"),
                 SslServerCertificateName = GetStringValue("SSL_CERTIFICATE"),
                 SessionPasswordKey = GetStringValue("SESSION_SECRET"),
-                SslServerCertificatePassphrase = GetStringValue("SSL_CERTIFICATE_PASSPHRASE"),
+                SslServerCertificatePassphrase = Environment.GetEnvironmentVariable("SSL_CERTIFICATE_PASSPHRASE")?.Trim(),
                 CampaignApiKeyMappingName = GetStringValue("CAMPAIGN_API_KEY_MAPPING"),
                 PostmanBaseUrl = GetStringValue("POSTMAN_BASE_URL"),
                 LogLevelString = GetStringValue("LOG_LEVEL")
@@ -41,7 +41,7 @@ namespace sg.gov.cpf.esvc.smpp.server.Extensions
             if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable(envName)))
                 throw new InvalidOperationException($"The Environment Value {envName} cannot be null or empty");
 
-            return Environment.GetEnvironmentVariable(envName)!;
+            return Environment.GetEnvironmentVariable(envName)!.Trim();
         }
 
     }
