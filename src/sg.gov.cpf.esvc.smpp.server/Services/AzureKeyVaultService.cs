@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using Azure.Security.KeyVault.Secrets;
 using Microsoft.ApplicationInsights;
 using Newtonsoft.Json;
