@@ -1,5 +1,8 @@
-﻿using Azure.Security.KeyVault.Secrets;
+﻿using Azure.Core;
+using Azure.Identity;
+using Azure.Security.KeyVault.Secrets;
 using Microsoft.ApplicationInsights;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using sg.gov.cpf.esvc.smpp.server.Configurations;
@@ -18,19 +21,16 @@ namespace sg.gov.cpf.esvc.smpp.server.Services
         public IList<PostmanCampaignApiKeyMapping>? PostmanCampaignApiKeyMappings { get; set; } = [];
 
 
-        public string? SessionPassword
-        {
-            get => sessionPassword ?? "";
-        }
+        public string? SessionPassword { get => sessionPassword ?? ""; }
 
         private string? sessionPassword { get; set; }
         
         private X509Certificate2? _serverCertificate;
 
         public AzureKeyVaultService(ILogger<AzureKeyVaultService> logger,
-            SecretClient secretClient,
-            TelemetryClient telemetryClient,
-            EnvironmentVariablesConfiguration environmentVariables)
+                                    SecretClient secretClient,
+                                    TelemetryClient telemetryClient,
+                                    EnvironmentVariablesConfiguration environmentVariables)
         {
             _logger = logger;
             _secretClient = secretClient;
@@ -72,8 +72,7 @@ namespace sg.gov.cpf.esvc.smpp.server.Services
 
         private void LoadCampaignApiKeyMapping()
         {
-            if (PostmanCampaignApiKeyMappings == null ||
-                (PostmanCampaignApiKeyMappings != null && PostmanCampaignApiKeyMappings.Count < 1))
+            if (PostmanCampaignApiKeyMappings == null || (PostmanCampaignApiKeyMappings != null && PostmanCampaignApiKeyMappings.Count < 1))
             {
                 _telemetryClient.TrackTrace("Loading postman campaign api key mapping");
                 var mappingJson = GetSecret(_environmentVariables.CampaignApiKeyMappingName);
@@ -81,12 +80,8 @@ namespace sg.gov.cpf.esvc.smpp.server.Services
                 _logger.LogInformation("Loading postman campaign mappings: {MappingJson}", mappingJson);
 
                 PostmanCampaignApiKeyMappings = JsonConvert.DeserializeObject<IList<PostmanCampaignApiKeyMapping>>(
-                                                    mappingJson,
-                                                    new JsonSerializerSettings()
-                                                    {
-                                                        ContractResolver = new CamelCasePropertyNamesContractResolver()
-                                                    }) ??
-                                                throw new Exception("unable to load campaign and api key mapping");
+                    mappingJson,
+                    new JsonSerializerSettings() { ContractResolver = new CamelCasePropertyNamesContractResolver() }) ?? throw new Exception("unable to load campaign and api key mapping");
             }
         }
 
@@ -99,8 +94,7 @@ namespace sg.gov.cpf.esvc.smpp.server.Services
 
         public X509Certificate2? GetCertificateFromSecret(string certSecretName, string certPassword)
         {
-            var certBytesString =
-                GetSecret(certSecretName) ?? throw new Exception("Certificate cannot be null or empty");
+            var certBytesString = GetSecret(certSecretName) ?? throw new Exception("Certificate cannot be null or empty");
 
             if (string.IsNullOrEmpty(certBytesString))
                 return null;

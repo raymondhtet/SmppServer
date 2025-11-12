@@ -12,6 +12,7 @@ public class ProcessCompleteMessageCommand(
     string message,
     string campaignId,
     string messageId,
+    int? delayInSeconds,
     ISmppSession session,
     IDeliveryReceiptSender deliveryReceiptSender,
     IExternalMessageService externalService,
@@ -31,6 +32,7 @@ public class ProcessCompleteMessageCommand(
                 message,
                 campaignId,
                 messageId,
+                delayInSeconds,
                 cancellationToken);
 
             if (!result.IsSuccess || environmentVariablesConfiguration.IsDeliverSmEnabled)

@@ -20,6 +20,7 @@ public class MessageProcessor : IMessageProcessor
         string message,
         string campaignId,
         string messageId,
+        int? delayInSeconds,
         ISmppSession session,
         CancellationToken cancellationToken)
     {
@@ -29,7 +30,8 @@ public class MessageProcessor : IMessageProcessor
             message,
             campaignId,
             messageId,
-            session,
+            delayInSeconds,
+            session,            
             _serviceProvider.GetRequiredService<IDeliveryReceiptSender>(),
             _serviceProvider.GetRequiredService<IExternalMessageService>(),
             _serviceProvider.GetRequiredService<EnvironmentVariablesConfiguration>(),

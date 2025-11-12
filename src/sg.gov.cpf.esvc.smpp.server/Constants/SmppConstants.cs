@@ -98,6 +98,7 @@
             internal const ushort SAR_TOTAL_SEGMENTS = 0x020E;
             internal const ushort SAR_SEGMENT_SEQNUM = 0x020F;
             internal const ushort CAMPAIGN_ID = 0x12AB;
+            internal const ushort DELAY = 0x12AC;
         }
 
         public static class EsmClass
@@ -106,13 +107,6 @@
             /// MC Delivery Receipt - equivalent to smpp.consts.ESM_CLASS.MC_DELIVERY_RECEIPT
             /// </summary>
             public const byte MC_DELIVERY_RECEIPT = 0x04;
-        }
-
-        internal static class TelemetryConstants
-        {
-            internal const string OperationID = "OperationID";
-            internal const string ActionID = "ActionID";
-            internal const string UserID = "UserID";
         }
     }
 }

@@ -50,7 +50,7 @@ public static class SmppPduFactory
         parser.ParseOptionalParameters();
         request.CampaignId = parser.ReadCampaignId();
         request.MessagePayload = parser.ReadMessagePayload();
-
+        request.DelayInSeconds = parser.ReadDelayConfig();
 
         return request;
     }

@@ -236,4 +236,12 @@ public class PduFieldParser(byte[] data)
 
         return Encoding.UTF8.GetString(campaignId);
     }
+
+    public int? ReadDelayConfig()
+    {
+        if (!OptionalParameters.TryGetValue(OptionalParameterTags.DELAY, out byte[]? delay))
+            return null;
+
+        return int.Parse(Encoding.ASCII.GetString(delay));
+    }
 }

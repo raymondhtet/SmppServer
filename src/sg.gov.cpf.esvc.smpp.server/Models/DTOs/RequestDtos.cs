@@ -33,6 +33,8 @@ public record SubmitSmRequest
     public byte[] MessagePayload { get; set; } = [];
 
     public string CampaignId { get; set; } = "";
+
+    public int? DelayInSeconds { get; set; }
     public Dictionary<ushort, byte[]> OptionalParameters { get; set; } = new();
 }
 

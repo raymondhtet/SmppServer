@@ -8,6 +8,7 @@ public interface IMessageProcessor
         string message,
         string campaignId,
         string messageId,
+        int? delayInSeconds,
         ISmppSession session,
         CancellationToken cancellationToken);
 

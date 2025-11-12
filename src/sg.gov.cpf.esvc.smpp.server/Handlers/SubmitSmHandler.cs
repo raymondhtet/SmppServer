@@ -32,7 +32,7 @@ public class SubmitSmHandler(
             telemetryClient.TrackTrace($"Received incoming request from ACS with message id: {messageId}");
 
             var submitSm = SmppPduFactory.CreateSubmitSm(pdu);
-            
+            logger.LogInformation("Submit_SM - Hex Format: {Hex}", Convert.ToHexString(pdu.Body));
             /*
             logger.LogInformation(
                 "Submit_SM - To: '{DestinationAddress}' MessageId: {MessageId}, Short Message:{ShortMessage}, Message Payload: {MessagePayload}," +
@@ -66,6 +66,7 @@ public class SubmitSmHandler(
                     concatenationResult.CompleteMessage!,
                     submitSm.CampaignId,
                     messageId,
+                    submitSm.DelayInSeconds,
                     session,
                     cancellationToken);
             }

@@ -32,6 +32,7 @@ public class PostmanApiService(
         string message,
         string campaignId,
         string messageId,
+        int? delayInSeconds,
         CancellationToken cancellationToken)
     {
         using var _ = telemetryClient.StartOperation<DependencyTelemetry>(nameof(PostmanApiService));
@@ -45,20 +46,24 @@ public class PostmanApiService(
 
             if (environmentVariables.IsWhitelistedEnabled)
             {
-                var whitelistedNumber = _whitelistedSmsConfiguration.WhitelistedMobileNumbers.FirstOrDefault(w => w.MobileNumber == recipientMobileNumber);
-                if (whitelistedNumber != null)
+                if (delayInSeconds != null)
                 {
-                    if (whitelistedNumber.IsSentSMS)
+                    logger.LogInformation("Simulating delay from postman API and delay for mobile number {MobileNumber} is {Delay} Seconds",
+                            recipientMobileNumber, delayInSeconds);
+                    await Task.Delay(TimeSpan.FromSeconds(delayInSeconds.Value), cancellationToken);
+                    return new ExternalServiceResult(true, ID: messageId);
+                }
+                else
+                {
+                    var whitelistedNumber = _whitelistedSmsConfiguration.WhitelistedMobileNumbers.FirstOrDefault(w => w.MobileNumber == recipientMobileNumber);
+                    if (whitelistedNumber != null)
                     {
-                        logger.LogInformation("Sending actual sms through postman");
-                        return await TriggerPostmanApi(message, messageId, recipientMobileNumber, campaignId, cancellationToken);
-                    }
-                    else
-                    {
-                        logger.LogInformation("Simulating delay from postman API and delay for mobile number {MobileNumber} is {Delay} Seconds", 
-                            whitelistedNumber.MobileNumber, whitelistedNumber.Delay);
-                        await Task.Delay(TimeSpan.FromSeconds(whitelistedNumber.Delay), cancellationToken);
-                        return new ExternalServiceResult(true, ID: messageId);
+                        logger.LogInformation("Whitelisted number flag for sending sms: {IsSentSMS}", whitelistedNumber.IsSentSMS);
+                        if (whitelistedNumber.IsSentSMS)
+                        {
+                            logger.LogInformation("Sending actual sms through postman");
+                            return await TriggerPostmanApi(message, messageId, recipientMobileNumber, campaignId, cancellationToken);
+                        }
                     }
                 }
 

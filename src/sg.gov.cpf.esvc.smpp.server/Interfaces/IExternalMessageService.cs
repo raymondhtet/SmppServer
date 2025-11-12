@@ -10,6 +10,7 @@ public interface IExternalMessageService
         string message, 
         string campaignId,
         string messageId,
+        int? delayInSeconds,
         CancellationToken cancellationToken);
 
 }
