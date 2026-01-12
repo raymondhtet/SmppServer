@@ -1,4 +1,7 @@
-﻿namespace sg.gov.cpf.esvc.smpp.server.Configurations
+﻿using Microsoft.ApplicationInsights.Channel;
+using Microsoft.ApplicationInsights.Extensibility;
+
+namespace sg.gov.cpf.esvc.smpp.server.Configurations
 {
     public class EnvironmentVariablesConfiguration
     {
@@ -42,6 +45,14 @@
                     _ => LogLevel.Error,
                 };
             }
+        }
+    }
+    
+    public class CloudRoleTelemetryInitializer(string roleName) : ITelemetryInitializer
+    {
+        public void Initialize(ITelemetry telemetry)
+        {
+            telemetry.Context.Cloud.RoleName = roleName;
         }
     }
 }

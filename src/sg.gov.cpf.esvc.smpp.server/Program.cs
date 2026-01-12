@@ -2,7 +2,7 @@ using Microsoft.ApplicationInsights.Channel;
 using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.ApplicationInsights.WindowsServer.TelemetryChannel;
 using sg.gov.cpf.esvc.smpp.server.Extensions;
-using Sg.Gov.Cpf.Esvc.Microservice.Common.Monitoring.ApplicationInsights;
+using sg.gov.cpf.esvc.smpp.server.Configurations;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
@@ -50,3 +50,5 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+

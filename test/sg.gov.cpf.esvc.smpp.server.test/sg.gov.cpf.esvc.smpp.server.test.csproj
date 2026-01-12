@@ -5,6 +5,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <RootNamespace>sg.gov.cpf.esvc.smpp.client</RootNamespace>
   </PropertyGroup>
 
 </Project>

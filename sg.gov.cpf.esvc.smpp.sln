@@ -7,7 +7,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "sg.gov.cpf.esvc.smpp.server
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "sg.gov.cpf.esvc.smpp.client", "test\sg.gov.cpf.esvc.smpp.client\sg.gov.cpf.esvc.smpp.client.csproj", "{DF040C5B-C718-40C5-9620-87EB15270650}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "sg.gov.cpf.esvc.smpp.server.test", "test\sg.gov.cpf.esvc.smpp.server.test\sg.gov.cpf.esvc.smpp.server.test.csproj", "{DF040C5B-C718-40C5-9620-87EB15270650}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{BAEF2E39-8D57-4735-86A9-A388E2EC828D}"
 EndProject
