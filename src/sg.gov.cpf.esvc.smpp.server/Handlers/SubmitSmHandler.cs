@@ -26,13 +26,18 @@ public class SubmitSmHandler(
             var stopwatch = Stopwatch.StartNew();
 
             var messageId = GenerateMessageId();
+            telemetryClient.TrackTrace($"Received incoming request from ACS with message id: {messageId}, " +
+                $"sequence number:{"0x" + pdu.SequenceNumber.ToString("X8")}");
             using var _ = telemetryClient.StartOperation<RequestTelemetry>(nameof(SubmitSmHandler));
             telemetryClient.Context.Operation.Id = messageId;
 
-            telemetryClient.TrackTrace($"Received incoming request from ACS with message id: {messageId}");
-
+            
             var submitSm = SmppPduFactory.CreateSubmitSm(pdu);
-            logger.LogInformation("Submit_SM - Hex Format: {Hex}", Convert.ToHexString(pdu.Body));
+            logger.LogInformation("Submit_SM - Hex Format: {Hex}", Convert.ToHexString(pdu.Body!));
+            telemetryClient.TrackTrace($"Processing incoming request from ACS with message id: {messageId}, " +
+                $"sequence number:{"0x" + pdu.SequenceNumber.ToString("X8")}, " +
+                $"mobile number: 65****{submitSm.DestinationAddress.Substring(6)}");
+
             /*
             logger.LogInformation(
                 "Submit_SM - To: '{DestinationAddress}' MessageId: {MessageId}, Short Message:{ShortMessage}, Message Payload: {MessagePayload}," +
@@ -56,23 +61,29 @@ public class SubmitSmHandler(
                 .AsSubmitSmResponse(pdu.SequenceNumber, messageId)
                 .Build();
 
+            await session.SendPduAsync(response, cancellationToken);
+
+            telemetryClient.TrackTrace($"Submit_SM Responding back to ACS with Message ID: {messageId}, " +
+                $"sequence number:{"0x" + pdu.SequenceNumber.ToString("X8")}, " +
+                $"mobile number: 65****{submitSm.DestinationAddress.Substring(6)}");
+
             if (concatenationResult.IsComplete)
             {
                 logger.LogInformation("(Complete Message Length: {Length}) and Complete Message Content:'{Content}'", concatenationResult.CompleteMessage!.Length, concatenationResult.CompleteMessage);
-                
+
                 await messageProcessor.ProcessCompleteMessageAsync(
-                    submitSm.SourceAddress,
-                    submitSm.DestinationAddress,
-                    concatenationResult.CompleteMessage!,
-                    submitSm.CampaignId,
-                    messageId,
-                    submitSm.DelayInSeconds,
-                    session,
-                    cancellationToken);
+                                submitSm.SourceAddress,
+                                submitSm.DestinationAddress,
+                                concatenationResult.CompleteMessage!,
+                                submitSm.CampaignId,
+                                messageId,
+                                submitSm.DelayInSeconds,
+                                session,
+                                cancellationToken);
             }
 
             stopwatch.Stop();
-            telemetryClient.TrackTrace($"Total execution time for message id ({messageId}) is {stopwatch.Elapsed.TotalSeconds} seconds");
+            logger.LogInformation("Total execution time for message id ({MessageId}) is {TotalElapsed} seconds", messageId, stopwatch.Elapsed.TotalSeconds);
 
             return response;
         }
@@ -90,5 +101,5 @@ public class SubmitSmHandler(
     }
 
     private static string GenerateMessageId() => Guid.NewGuid().ToString("N")[..10];
-    
+
 }

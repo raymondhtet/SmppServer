@@ -4,6 +4,7 @@ using Microsoft.ApplicationInsights.DataContracts;
 using Microsoft.Extensions.Options;
 using sg.gov.cpf.esvc.sg.gov.cpf.esvc.smpp.server.Configurations;
 using sg.gov.cpf.esvc.smpp.server.Configurations;
+using sg.gov.cpf.esvc.smpp.server.Constants;
 using sg.gov.cpf.esvc.smpp.server.Interfaces;
 using sg.gov.cpf.esvc.smpp.server.Models;
 using sg.gov.cpf.esvc.smpp.server.Services;
@@ -147,7 +148,7 @@ namespace sg.gov.cpf.esvc.smpp.server.BackgroundServices
 			}
 			catch (OperationCanceledException)
 			{
-				_logger.LogDebug("Client session handling cancelled");
+				_logger.LogError("Client session handling cancelled");
 			}
 			catch (Exception ex)
 			{
@@ -186,7 +187,7 @@ namespace sg.gov.cpf.esvc.smpp.server.BackgroundServices
                     var pdu = await session.ReadPduAsync(cancellationToken);
 					if (pdu == null)
 					{
-						_logger.LogDebug("Session {SessionId} - No PDU received, ending connection", session.Id);
+						_logger.LogError("Session {SessionId} - No PDU received, ending connection", session.Id);
 						break;
 					}
 
@@ -194,8 +195,11 @@ namespace sg.gov.cpf.esvc.smpp.server.BackgroundServices
 					var response = await _processingPipeline.HandleAsync(pdu, session, cancellationToken);
 
 					if (response != null)
-					{
-						await session.SendPduAsync(response, cancellationToken);
+					{						
+						if (response.CommandId != SmppConstants.SmppCommandId.SubmitSmResp)
+						{
+                            await session.SendPduAsync(response, cancellationToken);
+                        }
 					}
 
 					// Register authenticated sessions
@@ -207,7 +211,7 @@ namespace sg.gov.cpf.esvc.smpp.server.BackgroundServices
 				}
 				catch (OperationCanceledException)
 				{
-					_logger.LogDebug("Session PDU processing cancelled for {SessionId}", session.Id);
+					_logger.LogError("Session PDU processing cancelled for {SessionId}", session.Id);
 					break;
 				}
 				catch (Exception ex)

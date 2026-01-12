@@ -9,8 +9,6 @@
     {
         public string? MobileNumber { get; set; }
 
-        public int Delay { get; set; }
-
         public bool IsSentSMS { get; set; }
     }
 }

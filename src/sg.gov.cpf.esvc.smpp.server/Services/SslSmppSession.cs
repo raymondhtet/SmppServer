@@ -211,7 +211,8 @@ public class SslSmppSession : ISmppSession, IDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Session {SessionId} - Error sending SSL PDU", Id);
+            _logger.LogError(ex, "Error sending back SSL PDU with Message ID: ({MessageID}) for {ResponseType} - Sequence Number: {SequenceNumber}"
+                ,pdu.MessageId ?? "", GetCommandIdDescription(pdu.CommandId), "0x" + pdu.SequenceNumber.ToString("X8"));
             throw;
         }
         finally
@@ -219,6 +220,16 @@ public class SslSmppSession : ISmppSession, IDisposable
             _sendLock.Release();
         }
     }
+
+    private static string GetCommandIdDescription(uint commandId) => commandId switch
+    {
+        SmppConstants.SmppCommandId.BindTransceiverResp => "Bind Transceive Response",
+        SmppConstants.SmppCommandId.EnquireLinkResp => "Enquire Link Response",
+        SmppConstants.SmppCommandId.DeliverSmResp => "Deliver SM Response",
+        SmppConstants.SmppCommandId.SubmitSmResp => "Submit SM Response",
+        SmppConstants.SmppCommandId.UnbindResp => "Unbind Response",
+        _ => "Invalid"
+    };
 
     /// <summary>
     /// Helper method to read exact number of bytes from SSL stream
@@ -360,7 +371,7 @@ public class SslSmppSession : ISmppSession, IDisposable
     {
         try
         {
-            _logger.LogInformation("Validating client certificate for session {SessionId}, Certs: {Cert}, Errors: {Errors}", 
+            _logger.LogInformation("Validating client certificate for session {SessionId}, Certs: {Cert}, Errors: {Errors}",
                 Id, certificate?.Subject, sslPolicyErrors);
 
             // If client certificate is not required and none provided, allow
@@ -437,14 +448,14 @@ public class SslSmppSession : ISmppSession, IDisposable
         try
         {
             // Validate expiration
-            if (certificate.NotAfter < DateTime.Now)
+            if (certificate.NotAfter < DateTime.UtcNow)
             {
                 _logger.LogError("Client certificate expired for session {SessionId}: {NotAfter}", Id,
                     certificate.NotAfter);
                 return false;
             }
 
-            if (certificate.NotBefore > DateTime.Now)
+            if (certificate.NotBefore > DateTime.UtcNow)
             {
                 _logger.LogError("Client certificate not yet valid for session {SessionId}: {NotBefore}", Id,
                     certificate.NotBefore);

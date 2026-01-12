@@ -44,7 +44,12 @@ public class PostmanApiService(
 
             telemetryClient.TrackTrace($"Is Whitelisted SMS Configuration enabled? {environmentVariables.IsWhitelistedEnabled}");
 
-            if (environmentVariables.IsWhitelistedEnabled)
+            if (environmentVariables.IsProduction || !environmentVariables.IsWhitelistedEnabled)
+            {
+                telemetryClient.TrackTrace("Sending SMS");
+                return await TriggerPostmanApi(message, messageId, recipientMobileNumber, campaignId, cancellationToken);
+            }
+            else if (environmentVariables.IsWhitelistedEnabled)
             {
                 if (delayInSeconds != null)
                 {
@@ -68,16 +73,7 @@ public class PostmanApiService(
                 }
 
                 telemetryClient.TrackTrace($"The recipient mobile number is not whitelisted yet ({recipientMobileNumber})");
-            }
-            else if (environmentVariables.IsProduction)
-            {
-                telemetryClient.TrackTrace("Sending SMS in production");
-                return await TriggerPostmanApi(message, messageId, recipientMobileNumber, campaignId, cancellationToken);
-            }
-            else
-            {
-                logger.LogError("Whitelisting is not enabled in the non-prod");
-            }
+            }            
         }
         catch (Exception ex)
         {
@@ -118,8 +114,8 @@ public class PostmanApiService(
 
         // build postman url
         var postmanFullUrl = $"{postmanBaseUrl}/{string.Format(singleSmsUrl, campaignId)}";
-
         var result = await SendMessageToPostmanApi(apiKey, recipientMobileNumber, message, "english", postmanFullUrl, cancellationToken);
+
 
         if (result.IsSuccess)
         {

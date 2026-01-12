@@ -62,6 +62,7 @@ public class SmppResponseBuilder
         _response.SequenceNumber = sequenceNumber;
         _response.CommandStatus = SmppConstants.SmppCommandStatus.ESME_ROK;
         _response.Body = Encoding.ASCII.GetBytes(messageId + char.MinValue);
+        _response.MessageId = messageId;
         return this;
     }
 

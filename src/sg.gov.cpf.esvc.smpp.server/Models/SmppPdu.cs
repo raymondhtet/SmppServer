@@ -20,6 +20,8 @@ public class SmppPdu
 
     public string SystemId { get; internal set; }
 
+    public string? MessageId { get; set; }
+
     public void ParseHeader(byte[] headerData)
     {
         if (headerData.Length < 16)

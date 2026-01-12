@@ -14,17 +14,7 @@ public static partial class LoggingExtensions
 
     public static ILoggingBuilder ConfigureLogging(this ILoggingBuilder logging, EnvironmentVariablesConfiguration environment)
     {
-        logging.SetMinimumLevel(environment.MinimumLogLevel);
-
-        // Console logging
-        logging.AddFilter("Microsoft", environment.MinimumLogLevel)
-               .AddFilter("Microsoft.Hosting.Lifetime", environment.MinimumLogLevel);
-
-        // Application Insights logging
-        logging.AddApplicationInsights()
-               .AddFilter<ApplicationInsightsLoggerProvider>("Default", environment.MinimumLogLevel)
-               .AddFilter<ApplicationInsightsLoggerProvider>("Microsoft", environment.MinimumLogLevel)
-               .AddFilter<ApplicationInsightsLoggerProvider>("Microsoft.Hosting.Lifetime", environment.MinimumLogLevel);
+        logging.AddFilter<ApplicationInsightsLoggerProvider>("", environment.MinimumLogLevel);
 
         return logging;
     }

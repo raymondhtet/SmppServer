@@ -84,20 +84,20 @@ public class SslCertificateManager : ISslCertificateManager, IDisposable
             }
 
             // Check expiration
-            if (certificate.NotAfter <= DateTime.Now)
+            if (certificate.NotAfter <= DateTime.UtcNow)
             {
                 _logger.LogError("Certificate has expired: {ExpiryDate}", certificate.NotAfter);
                 return false;
             }
 
-            if (certificate.NotBefore > DateTime.Now)
+            if (certificate.NotBefore > DateTime.UtcNow)
             {
                 _logger.LogError("Certificate is not yet valid: {ValidFrom}", certificate.NotBefore);
                 return false;
             }
 
             // Check if expiring soon (30 days)
-            if (certificate.NotAfter <= DateTime.Now.AddDays(30))
+            if (certificate.NotAfter <= DateTime.UtcNow.AddDays(30))
             {
                 _logger.LogWarning("Certificate expires soon: {ExpiryDate}", certificate.NotAfter);
             }
@@ -248,7 +248,7 @@ public class SslCertificateManager : ISslCertificateManager, IDisposable
     /// </summary>
     private static bool IsCertificateValid(X509Certificate2 certificate)
     {
-        return certificate.NotBefore <= DateTime.Now && certificate.NotAfter > DateTime.Now;
+        return certificate.NotBefore <= DateTime.UtcNow && certificate.NotAfter > DateTime.UtcNow;
     }
 
     /// <summary>
@@ -256,7 +256,7 @@ public class SslCertificateManager : ISslCertificateManager, IDisposable
     /// </summary>
     private void CheckCertificateExpiration(X509Certificate2 certificate)
     {
-        var daysUntilExpiry = (certificate.NotAfter - DateTime.Now).TotalDays;
+        var daysUntilExpiry = (certificate.NotAfter - DateTime.UtcNow).TotalDays;
         
         if (daysUntilExpiry is <= 30 and > 0)
         {
