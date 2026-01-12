@@ -1,13 +1,14 @@
-﻿using Azure.Core;
-using Azure.Identity;
+using System.Security.Cryptography;
 using Azure.Security.KeyVault.Secrets;
 using Microsoft.ApplicationInsights;
-using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using sg.gov.cpf.esvc.smpp.server.Configurations;
 using sg.gov.cpf.esvc.smpp.server.Interfaces;
 using System.Security.Cryptography.X509Certificates;
+using Org.BouncyCastle.Crypto.Parameters;
+using Org.BouncyCastle.Pkcs;
+using Org.BouncyCastle.Security;
 
 namespace sg.gov.cpf.esvc.smpp.server.Services
 {
@@ -15,22 +16,25 @@ namespace sg.gov.cpf.esvc.smpp.server.Services
     {
         private readonly ILogger<AzureKeyVaultService> _logger;
         private readonly TelemetryClient _telemetryClient;
-        private SecretClient _secretClient;
+        private readonly SecretClient _secretClient;
         private readonly EnvironmentVariablesConfiguration _environmentVariables;
 
         public IList<PostmanCampaignApiKeyMapping>? PostmanCampaignApiKeyMappings { get; set; } = [];
 
 
-        public string? SessionPassword { get => sessionPassword ?? ""; }
+        public string? SessionPassword
+        {
+            get => sessionPassword ?? "";
+        }
 
         private string? sessionPassword { get; set; }
         
-        private X509Certificate2? _serverCertificate;
+        private readonly X509Certificate2? _serverCertificate;
 
         public AzureKeyVaultService(ILogger<AzureKeyVaultService> logger,
-                                    SecretClient secretClient,
-                                    TelemetryClient telemetryClient,
-                                    EnvironmentVariablesConfiguration environmentVariables)
+            SecretClient secretClient,
+            TelemetryClient telemetryClient,
+            EnvironmentVariablesConfiguration environmentVariables)
         {
             _logger = logger;
             _secretClient = secretClient;
@@ -72,7 +76,8 @@ namespace sg.gov.cpf.esvc.smpp.server.Services
 
         private void LoadCampaignApiKeyMapping()
         {
-            if (PostmanCampaignApiKeyMappings == null || (PostmanCampaignApiKeyMappings != null && PostmanCampaignApiKeyMappings.Count < 1))
+            if (PostmanCampaignApiKeyMappings == null ||
+                (PostmanCampaignApiKeyMappings != null && PostmanCampaignApiKeyMappings.Count < 1))
             {
                 _telemetryClient.TrackTrace("Loading postman campaign api key mapping");
                 var mappingJson = GetSecret(_environmentVariables.CampaignApiKeyMappingName);
@@ -80,8 +85,12 @@ namespace sg.gov.cpf.esvc.smpp.server.Services
                 _logger.LogInformation("Loading postman campaign mappings: {MappingJson}", mappingJson);
 
                 PostmanCampaignApiKeyMappings = JsonConvert.DeserializeObject<IList<PostmanCampaignApiKeyMapping>>(
-                    mappingJson,
-                    new JsonSerializerSettings() { ContractResolver = new CamelCasePropertyNamesContractResolver() }) ?? throw new Exception("unable to load campaign and api key mapping");
+                                                    mappingJson,
+                                                    new JsonSerializerSettings()
+                                                    {
+                                                        ContractResolver = new CamelCasePropertyNamesContractResolver()
+                                                    }) ??
+                                                throw new Exception("unable to load campaign and api key mapping");
             }
         }
 
@@ -94,7 +103,8 @@ namespace sg.gov.cpf.esvc.smpp.server.Services
 
         public X509Certificate2? GetCertificateFromSecret(string certSecretName, string certPassword)
         {
-            var certBytesString = GetSecret(certSecretName) ?? throw new Exception("Certificate cannot be null or empty");
+            var certBytesString =
+                GetSecret(certSecretName) ?? throw new Exception("Certificate cannot be null or empty");
 
             if (string.IsNullOrEmpty(certBytesString))
                 return null;
@@ -103,9 +113,31 @@ namespace sg.gov.cpf.esvc.smpp.server.Services
 
             _logger.LogInformation("Cert Base64String: {Base64String}", certBytesString);
             _logger.LogInformation("Cert Password: {CertPassword}", certPassword);
-            return new X509Certificate2(certBytes, certPassword);
+            var certificate = GetCertificateForMac(certBytes);
+            return new X509Certificate2(certificate);
         }
 
+        private static X509Certificate2 GetCertificateForMac(byte[] CertBytes)
+        {
+            var pkcs12Store = new Pkcs12StoreBuilder().Build();
+            using (var memStream = new MemoryStream(CertBytes))
+                pkcs12Store.Load(memStream, []);
+
+            var keyAlias = pkcs12Store.Aliases.SingleOrDefault(a => pkcs12Store.IsKeyEntry(a));
+
+            var key = (RsaPrivateCrtKeyParameters)pkcs12Store.GetKey(keyAlias).Key;
+            var bouncyCertificate = pkcs12Store.GetCertificate(keyAlias).Certificate;
+
+            var certificate = new X509Certificate2(DotNetUtilities.ToX509Certificate(bouncyCertificate));
+            var parameters = DotNetUtilities.ToRSAParameters(key);
+
+            var rsa = new RSACryptoServiceProvider();
+            rsa.ImportParameters(parameters);
+            certificate = certificate.CopyWithPrivateKey(rsa);
+
+
+            return certificate;
+        }
 
         public void RefreshCacheValues()
         {
