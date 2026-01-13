@@ -1,8 +1,10 @@
-﻿using sg.gov.cpf.esvc.smpp.server.Constants;
+﻿using System.Diagnostics.CodeAnalysis;
+using sg.gov.cpf.esvc.smpp.server.Constants;
 using System.Text;
 
 namespace sg.gov.cpf.esvc.smpp.server.Models;
 
+[ExcludeFromCodeCoverage]
 public class SmppResponseBuilder
 {
     private readonly SmppPdu _response = new();

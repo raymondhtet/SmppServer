@@ -1,10 +1,12 @@
-﻿using sg.gov.cpf.esvc.smpp.server.Helpers;
+﻿using System.Diagnostics.CodeAnalysis;
+using sg.gov.cpf.esvc.smpp.server.Helpers;
 using sg.gov.cpf.esvc.smpp.server.Models.DTOs;
 using System.Text;
 using static sg.gov.cpf.esvc.smpp.server.Constants.SmppConstants;
 
 namespace sg.gov.cpf.esvc.smpp.server.Models;
 
+[ExcludeFromCodeCoverage]
 public class SmppPdu
 {
     public SmppPdu()

@@ -1,5 +1,8 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace sg.gov.cpf.esvc.smpp.server.Models;
 
+[ExcludeFromCodeCoverage]
 public class PostmanResponse
 {
     public Error? Error { get; set; }
@@ -7,6 +10,7 @@ public class PostmanResponse
     public string? ID { get; set; }
 }
 
+[ExcludeFromCodeCoverage]
 public class Error
 {
     public string? Code { get; set; }

@@ -1,5 +1,8 @@
-﻿namespace sg.gov.cpf.esvc.smpp.server.Models.DTOs;
+﻿using System.Diagnostics.CodeAnalysis;
 
+namespace sg.gov.cpf.esvc.smpp.server.Models.DTOs;
+
+[ExcludeFromCodeCoverage]
 public record BindTransceiverRequest(
     string ServiceType,
     string SystemId,
@@ -10,6 +13,7 @@ public record BindTransceiverRequest(
     byte AddrNpi,
     string AddressRange);
 
+[ExcludeFromCodeCoverage]
 public record SubmitSmRequest
 {
     public string ServiceType { get; init; } = "";
@@ -38,23 +42,11 @@ public record SubmitSmRequest
     public Dictionary<ushort, byte[]> OptionalParameters { get; set; } = new();
 }
 
+[ExcludeFromCodeCoverage]
 public record ConcatenationResult(bool IsComplete, string? CompleteMessage = null);
 
+[ExcludeFromCodeCoverage]
 public record MessageProcessingResult(bool IsSuccess, string? ErrorMessage = null);
 
+[ExcludeFromCodeCoverage]
 public record ExternalServiceResult(bool IsSuccess = false, string? ErrorMessage = null, string? ErrorCode = null, string? ID = null);
-
-public struct UdhConcatenationInfo
-{
-    public ushort ReferenceNumber { get; set; }
-    public byte TotalParts { get; set; }
-    public byte PartNumber { get; set; }
-    public int UdhLength { get; set; }
-}
-
-public struct SarConcatenationInfo
-{
-    public ushort ReferenceNumber { get; set; }
-    public byte TotalParts { get; set; }
-    public byte PartNumber { get; set; }
-}

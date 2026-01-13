@@ -1,5 +1,8 @@
-﻿namespace sg.gov.cpf.esvc.smpp.server.Exceptions
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace sg.gov.cpf.esvc.smpp.server.Exceptions
 {
+    [ExcludeFromCodeCoverage]
     public class PostmanException : Exception
     {
         public PostmanException(string? errorMessage,

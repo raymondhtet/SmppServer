@@ -1,4 +1,5 @@
-﻿using Azure.Core;
+﻿using System.Diagnostics.CodeAnalysis;
+using Azure.Core;
 using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
 using Microsoft.Extensions.Options;
@@ -8,6 +9,7 @@ using sg.gov.cpf.esvc.smpp.server.Services;
 
 namespace sg.gov.cpf.esvc.smpp.server.Extensions
 {
+    [ExcludeFromCodeCoverage]
     public static class AzureKeyVaultServiceExtensions
     {
         public static void AddAzureKeyVaultFramework(this IServiceCollection services, IConfiguration configuration)

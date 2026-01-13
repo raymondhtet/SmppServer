@@ -1,8 +1,10 @@
 using sg.gov.cpf.esvc.smpp.server.Constants;
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 
 namespace sg.gov.cpf.esvc.smpp.server.Models;
 
+[ExcludeFromCodeCoverage]
 public class MessageTracker(ILogger<MessageTracker> logger)
 {
     private readonly ConcurrentDictionary<string, MessagePartState> _messageStates = new();

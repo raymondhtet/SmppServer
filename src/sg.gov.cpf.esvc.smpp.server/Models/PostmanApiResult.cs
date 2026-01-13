@@ -1,5 +1,8 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace sg.gov.cpf.esvc.smpp.server.Models;
 
+[ExcludeFromCodeCoverage]
 public class PostmanApiResult
 {
     public bool IsSuccess { get; set; }

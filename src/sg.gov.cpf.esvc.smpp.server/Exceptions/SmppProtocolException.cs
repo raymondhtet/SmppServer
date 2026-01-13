@@ -1,8 +1,10 @@
-﻿using sg.gov.cpf.esvc.smpp.server.Constants;
+﻿using System.Diagnostics.CodeAnalysis;
+using sg.gov.cpf.esvc.smpp.server.Constants;
 using System.Runtime.Serialization;
 
 namespace sg.gov.cpf.esvc.smpp.server.Exceptions;
 
+[ExcludeFromCodeCoverage]
 [Serializable]
 public class SmppProtocolException : SmppException
 {

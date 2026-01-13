@@ -1,9 +1,11 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using System.Diagnostics.CodeAnalysis;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.ApplicationInsights;
 using sg.gov.cpf.esvc.smpp.server.Configurations;
 
 namespace sg.gov.cpf.esvc.smpp.server.Extensions;
 
+[ExcludeFromCodeCoverage]
 public static partial class LoggingExtensions
 {
     [LoggerMessage(

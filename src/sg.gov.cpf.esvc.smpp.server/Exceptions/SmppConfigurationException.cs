@@ -1,7 +1,9 @@
-﻿using System.Runtime.Serialization;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Serialization;
 
 namespace sg.gov.cpf.esvc.smpp.server.Exceptions;
 
+[ExcludeFromCodeCoverage]
 [Serializable]
 public class SmppConfigurationException : SmppException
 {

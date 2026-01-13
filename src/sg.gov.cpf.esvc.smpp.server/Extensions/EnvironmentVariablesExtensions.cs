@@ -1,7 +1,9 @@
-﻿using sg.gov.cpf.esvc.smpp.server.Configurations;
+﻿using System.Diagnostics.CodeAnalysis;
+using sg.gov.cpf.esvc.smpp.server.Configurations;
 
 namespace sg.gov.cpf.esvc.smpp.server.Extensions
 {
+    [ExcludeFromCodeCoverage]
     public static class EnvironmentVariablesExtensions
     {
         public static EnvironmentVariablesConfiguration ParseEnvironmentVariables(this IServiceCollection services)

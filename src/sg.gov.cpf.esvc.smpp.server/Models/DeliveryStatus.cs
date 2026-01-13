@@ -1,7 +1,9 @@
-﻿using static sg.gov.cpf.esvc.smpp.server.Constants.SmppConstants;
+﻿using System.Diagnostics.CodeAnalysis;
+using static sg.gov.cpf.esvc.smpp.server.Constants.SmppConstants;
 
 namespace sg.gov.cpf.esvc.smpp.server.Models;
 
+[ExcludeFromCodeCoverage]
 public class DeliveryStatus
 {
     public MessageState MessageState { get; set; }

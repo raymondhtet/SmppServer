@@ -1,5 +1,8 @@
-﻿namespace sg.gov.cpf.esvc.smpp.server.Constants
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace sg.gov.cpf.esvc.smpp.server.Constants
 {
+    [ExcludeFromCodeCoverage]
     public static class SmppConstants
     {
         public static readonly int HeaderSize = 16;

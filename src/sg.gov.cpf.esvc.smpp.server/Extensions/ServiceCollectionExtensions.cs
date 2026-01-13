@@ -1,4 +1,5 @@
-﻿using sg.gov.cpf.esvc.sg.gov.cpf.esvc.smpp.server.Configurations;
+﻿using System.Diagnostics.CodeAnalysis;
+using sg.gov.cpf.esvc.sg.gov.cpf.esvc.smpp.server.Configurations;
 using sg.gov.cpf.esvc.smpp.server.BackgroundServices;
 using sg.gov.cpf.esvc.smpp.server.Configurations;
 using sg.gov.cpf.esvc.smpp.server.Handlers;
@@ -8,6 +9,7 @@ using sg.gov.cpf.esvc.smpp.server.Services;
 
 namespace sg.gov.cpf.esvc.smpp.server.Extensions;
 
+[ExcludeFromCodeCoverage]
 public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddSmppServer(
