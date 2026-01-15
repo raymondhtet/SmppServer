@@ -94,7 +94,7 @@ public class SslSmppSessionTests : IDisposable
         var client = CreateTcpClient();
 
         // Act & Assert
-        Assert.Throws<NullReferenceException>(() =>
+        Assert.Throws<ArgumentNullException>(() =>
             new SslSmppSession(
                 client,
                 _mockLogger.Object,
@@ -381,7 +381,9 @@ public class SslSmppSessionTests : IDisposable
 
     private X509Certificate2 CreateSelfSignedCertificate()
     {
-        using var rsa = RSA.Create(2048);
+        // Create certificate that works across all platforms (Windows, Linux, macOS)
+        var rsa = RSA.Create(2048);
+
         var request = new CertificateRequest(
             "CN=Test SSL Certificate",
             rsa,
@@ -393,10 +395,22 @@ public class SslSmppSessionTests : IDisposable
             new X509BasicConstraintsExtension(false, false, 0, false)
         );
 
-        return request.CreateSelfSigned(
+        var certificate = request.CreateSelfSigned(
             DateTimeOffset.UtcNow.AddDays(-1),
             DateTimeOffset.UtcNow.AddYears(1)
         );
+
+        // Export and re-import to ensure the certificate works on all platforms
+        // This avoids macOS keychain issues
+        var pfxBytes = certificate.Export(X509ContentType.Pfx, "");
+
+        // Clean up the original certificate
+        certificate.Dispose();
+        rsa.Dispose();
+
+        // Return a new certificate from the PFX bytes
+        return new X509Certificate2(pfxBytes, "",
+            X509KeyStorageFlags.Exportable | X509KeyStorageFlags.EphemeralKeySet);
     }
 
     public void Dispose()
