@@ -1,12 +1,16 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using System.Buffers.Binary;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using sg.gov.cpf.esvc.smpp.server.Configurations;
 using sg.gov.cpf.esvc.smpp.server.Services;
 using System.Net;
+using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using sg.gov.cpf.esvc.smpp.server.Constants;
+using sg.gov.cpf.esvc.smpp.server.Models;
 using Xunit;
 using Assert = Xunit.Assert;
 
@@ -411,6 +415,122 @@ public class SslSmppSessionTests : IDisposable
         // Return a new certificate from the PFX bytes
         return new X509Certificate2(pfxBytes, "",
             X509KeyStorageFlags.Exportable | X509KeyStorageFlags.EphemeralKeySet);
+    }
+
+    [Fact]
+    public async Task ReadPduAsync_WithValidData_ReturnsParsedPdu()
+    {
+        // Arrange
+        // Create a 16-byte header for a Generic Nack (Command Length = 16)
+        var pduData = new byte[16];
+        BinaryPrimitives.WriteUInt32BigEndian(pduData.AsSpan(0, 4), 16); // length
+        BinaryPrimitives.WriteUInt32BigEndian(pduData.AsSpan(4, 4), 0x80000000); // command id
+        BinaryPrimitives.WriteUInt32BigEndian(pduData.AsSpan(12, 4), 1); // sequence
+
+        var session = CreateAuthenticatedSession(pduData);
+
+        // Act
+        var result = await session.ReadPduAsync();
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(16u, result.CommandLength);
+        Assert.Equal(0x80000000u, result.CommandId);
+    }
+
+    [Fact]
+    public async Task ReadPduAsync_IncompleteHeader_ReturnsNullAndLogsError()
+    {
+        // Arrange: Only 8 bytes sent instead of 16
+        var incompleteData = new byte[8];
+        var session = CreateAuthenticatedSession(incompleteData);
+
+        // Act
+        var result = await session.ReadPduAsync();
+
+        // Assert
+        Assert.Null(result);
+        _mockLogger.Verify(x => x.Log(
+            LogLevel.Error,
+            It.IsAny<EventId>(),
+            It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Incomplete SSL header read")),
+            It.IsAny<Exception>(),
+            It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task SendPduAsync_WritesCorrectBytesToStream()
+    {
+        // Arrange
+        var memoryStream = new MemoryStream();
+        var session = CreateAuthenticatedSessionWithStream(memoryStream);
+
+        var pdu = new SmppPdu
+        {
+            CommandId = SmppConstants.SmppCommandId.EnquireLink,
+            SequenceNumber = 5
+        };
+
+        // Act
+        await session.SendPduAsync(pdu);
+
+        // Assert
+        var sentBytes = memoryStream.ToArray();
+        Assert.True(sentBytes.Length >= 16);
+        Assert.Equal(5u, BinaryPrimitives.ReadUInt32BigEndian(sentBytes.AsSpan(12, 4)));
+    }
+
+    [Fact]
+    public async Task ReadPduAsync_WhenPaused_ReturnsNullImmediately()
+    {
+        // Arrange
+        var session = CreateAuthenticatedSession(new byte[16]);
+        session.Pause();
+
+        // Act
+        var result = await session.ReadPduAsync();
+
+        // Assert
+        Assert.Null(result);
+    }
+
+    // Helper to inject a stream into the private _sslStream field via reflection
+    private SslSmppSession CreateAuthenticatedSession(byte[] inputData)
+    {
+        return CreateAuthenticatedSessionWithStream(new MemoryStream(inputData));
+    }
+
+    private SslSmppSession CreateAuthenticatedSessionWithStream(Stream stream)
+    {
+        var mockClient = new Mock<TcpClient>();
+        var session = new SslSmppSession(mockClient.Object, _mockLogger.Object, Options.Create(_sslConfig), _testCertificate);
+
+        // SslSmppSession requires _sslAuthenticated = true and _sslStream != null
+        // We use reflection to set these private fields for unit testing logic
+        var type = typeof(SslSmppSession);
+
+        // Since SslStream is sealed, we mock the logic by injecting a wrapper or
+        // using a real SslStream on a loopback, but for pure unit testing ReadPdu logic:
+        var fieldStream = type.GetField("_sslStream", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        var fieldAuth = type.GetField("_sslAuthenticated", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
+        fieldStream!.SetValue(session, CreateFakeSslStream(stream));
+        fieldAuth!.SetValue(session, true);
+
+        return session;
+    }
+
+    private SslStream CreateFakeSslStream(Stream innerStream)
+    {
+        // SslStream requires a real stream. We provide the MemoryStream.
+        return new SslStream(innerStream, leaveInnerStreamOpen: true);
+    }
+
+    private X509Certificate2 CreateTestCert()
+    {
+        var rsa = System.Security.Cryptography.RSA.Create(2048);
+        var request = new CertificateRequest("CN=Test", rsa, System.Security.Cryptography.HashAlgorithmName.SHA256, System.Security.Cryptography.RSASignaturePadding.Pkcs1);
+        return request.CreateSelfSigned(DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow.AddDays(1));
     }
 
     public void Dispose()
